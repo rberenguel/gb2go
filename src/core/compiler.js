@@ -55,6 +55,10 @@ export class GBDKCompiler {
       // Don't load WASM modules yet - load them on-demand to avoid conflicts
       // Emscripten WASM modules overwrite each other when loaded simultaneously
 
+      // Preload GBDK resources (headers and libraries)
+      this._progress('Loading GBDK resources...', 10);
+      await this.vfs.preloadResources();
+
       this._progress('Initialization complete', 100);
       this.isInitialized = true;
 

@@ -63,6 +63,9 @@
           <button id="btn-download" class="btn" title="Download ROM (.gb)" disabled>
             <i class="iconoir-download"></i>
           </button>
+          <button id="btn-api-info" class="btn" title="API Documentation">
+            <i class="iconoir-info-circle"></i>
+          </button>
         </div>
 
         <div class="toolbar-section toolbar-actions">
@@ -180,6 +183,51 @@
           <a href="https://github.com/rberenguel/gb2go" target="_blank" class="github-link">
             <i class="iconoir-github-circle"></i> View on GitHub
           </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Browser Modal -->
+    <div id="api-modal" class="modal hidden">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>GBDK API Browser</h2>
+          <button id="close-api" class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body api-browser-body">
+          <div class="api-sidebar">
+            <div class="api-search-container">
+              <input
+                type="text"
+                id="api-search"
+                placeholder="Search headers..."
+                class="api-search-input"
+              />
+            </div>
+            <div id="api-file-list" class="api-file-list">
+              <!-- Header files will be listed here -->
+            </div>
+          </div>
+          <div class="api-content">
+            <div class="api-content-toolbar">
+              <button id="btn-view-doc" class="toggle-view-btn active" title="Show Documentation">
+                Documentation
+              </button>
+              <button id="btn-view-raw" class="toggle-view-btn" title="Show Raw Source">
+                Raw Source
+              </button>
+            </div>
+            <!-- Container for switching views -->
+            <div
+              id="api-view-container"
+              style="flex: 1; overflow: hidden; display: flex; flex-direction: column"
+            >
+              <div id="api-content-viewer" class="code-viewer hidden"></div>
+              <div id="api-doc-viewer" class="doc-view">
+                <div class="placeholder-text">Select a header file to view its content</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -116,6 +116,9 @@ function initUI() {
   // Import button
   document.getElementById('btn-import')?.addEventListener('click', handleImport);
 
+  // API Info button
+  document.getElementById('btn-api-info')?.addEventListener('click', handleApiInfo);
+
   // About button
   document.getElementById('btn-about')?.addEventListener('click', handleAbout);
 
@@ -601,6 +604,255 @@ function handleAbout() {
 
   // Close on click outside
   window.onclick = (event) => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  };
+}
+
+/**
+ * Handle API Info Modal
+ */
+function handleApiInfo() {
+  const modal = document.getElementById('api-modal');
+  const closeBtn = document.getElementById('close-api');
+  const fileList = document.getElementById('api-file-list');
+  const rawViewer = document.getElementById('api-content-viewer');
+  const docViewer = document.getElementById('api-doc-viewer');
+  const searchInput = document.getElementById('api-search');
+  const btnViewDoc = document.getElementById('btn-view-doc');
+  const btnViewRaw = document.getElementById('btn-view-raw');
+
+  if (!modal || !fileList || !rawViewer || !docViewer) return;
+
+  // State
+  let currentFile = null;
+  let currentContent = '';
+  let viewMode = 'doc'; // 'doc' or 'raw'
+
+  // Show modal
+  modal.classList.remove('hidden');
+
+  // Toggle View Function
+  const setViewMode = (mode) => {
+    viewMode = mode;
+    if (mode === 'doc') {
+      rawViewer.classList.add('hidden');
+      docViewer.classList.remove('hidden');
+      btnViewDoc.classList.add('active');
+      btnViewRaw.classList.remove('active');
+      renderDocView();
+    } else {
+      docViewer.classList.add('hidden');
+      rawViewer.classList.remove('hidden');
+      btnViewDoc.classList.remove('active');
+      btnViewRaw.classList.add('active');
+      rawViewer.textContent = currentContent || 'Select a file';
+    }
+  };
+
+  // Bind toggle buttons
+  if (btnViewDoc) btnViewDoc.onclick = () => setViewMode('doc');
+  if (btnViewRaw) btnViewRaw.onclick = () => setViewMode('raw');
+
+  // Header Parser (Simple Heuristic)
+  const parseHeaderAndRender = (fileName, content) => {
+    // Basic JSDoc-like comment parsing
+    // Looks for comments /** ... */ followed by function signatures
+    const functions = [];
+    let fileDesc = '';
+
+    // Regex for block comments: /\*\*([\s\S]*?)\*\//g
+    const comments = [...content.matchAll(/\/\*\*([\s\S]*?)\*\//g)];
+
+    // Heuristic: The first comment is often the file description, especially if at the top
+    if (comments.length > 0 && comments[0].index < 50) {
+      fileDesc = comments[0][1]
+        .replace(/\r/g, '')
+        .split('\n')
+        .map((l) => l.replace(/^\s*\*\s?/, '').trim())
+        .join(' ')
+        .trim();
+    }
+
+    // Heuristic for functions: looks for return type + name + ( args )
+    // This is hard to do perfectly with regex, so we'll accept some margin of error
+    // Strategy: Look for lines ending with ); or ) NONBANKED;
+    const lines = content.split('\n');
+    let lastComment = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Check if line is end of a block comment
+      if (line.endsWith('*/')) {
+        // Backtrack to find start of comment
+        for (let j = i; j >= 0; j--) {
+          if (lines[j].trim().startsWith('/**')) {
+            lastComment = lines
+              .slice(j, i + 1)
+              .join('\n')
+              .replace(/\/\*\*|^\s*\*\s?|\*\//gm, '') // Strip comment markers
+              .trim();
+            break;
+          }
+        }
+      }
+
+      // Check for function signature
+      // Example: void set_bkg_data(uint8_t first_tile, uint8_t nb_tiles, const uint8_t *data) NONBANKED;
+      if (
+        line.includes('(') &&
+        line.includes(')') &&
+        line.endsWith(';') &&
+        !line.startsWith('#') &&
+        !line.startsWith('//') &&
+        !line.startsWith('typedef')
+      ) {
+        // It's likely a function
+        // Clean up signature
+        const signature = line;
+
+        // Extract name
+        const match = signature.match(/(\w+)\s*\(/);
+        const name = match ? match[1] : 'unknown';
+
+        // Use last found comment if it's close (within 5 lines above)
+        // simplified: just use lastComment if non-null, then reset it
+        let desc = lastComment || 'No description available.';
+
+        // Clean tags from desc
+        desc = desc.replace(/@param\s+\w+/g, '\nparam:').replace(/@return/g, '\nreturn:');
+
+        functions.push({
+          name,
+          signature,
+          description: desc,
+          isNonBanked: signature.includes('NONBANKED'),
+        });
+
+        lastComment = null; // Reset
+      }
+    }
+
+    // Render Logic
+    docViewer.innerHTML = '';
+
+    const headerEl = document.createElement('div');
+    headerEl.className = 'doc-file-header';
+    headerEl.innerHTML = `
+      <div class="doc-file-title">${fileName}</div>
+      <div class="doc-file-desc">${fileDesc || 'Official GBDK Header File'}</div>
+    `;
+    docViewer.appendChild(headerEl);
+
+    if (functions.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.style.padding = '20px';
+      emptyMsg.style.color = '#888';
+      emptyMsg.textContent = 'No functions detected (or parser failed). Try "Raw Source" view.';
+      docViewer.appendChild(emptyMsg);
+      return;
+    }
+
+    functions.forEach((fn) => {
+      const card = document.createElement('div');
+      card.className = 'doc-function-card';
+
+      let badges = '';
+      if (fn.isNonBanked) {
+        badges += '<span class="doc-tag doc-tag-nonbanked">NONBANKED</span>';
+      }
+
+      // Highlight function name in signature
+      const highlightedSig = fn.signature.replace(
+        fn.name,
+        `<span class="doc-func-name">${fn.name}</span>`
+      );
+
+      card.innerHTML = `
+            ${badges}
+            <div class="doc-func-sig">${highlightedSig}</div>
+            <div class="doc-func-desc">${fn.description}</div>
+        `;
+      docViewer.appendChild(card);
+    });
+  };
+
+  const renderDocView = () => {
+    if (currentFile && currentContent) {
+      parseHeaderAndRender(currentFile, currentContent);
+    } else {
+      docViewer.innerHTML =
+        '<div class="placeholder-text">Select a header file to view its content</div>';
+    }
+  };
+
+  // Logic to populate files
+  if (fileList.children.length === 0) {
+    if (app.compiler && app.compiler.vfs && app.compiler.vfs.headers) {
+      const headers = app.compiler.vfs.headers;
+      const sortedPaths = Object.keys(headers).sort();
+
+      const populateList = (filter = '') => {
+        fileList.innerHTML = '';
+        const term = filter.toLowerCase();
+
+        sortedPaths.forEach((path) => {
+          // Search in path OR content
+          const content = headers[path] || '';
+          if (term && !path.toLowerCase().includes(term) && !content.toLowerCase().includes(term)) {
+            return;
+          }
+
+          const item = document.createElement('div');
+          item.className = 'api-file-item';
+          item.textContent = path;
+          item.onclick = () => {
+            // Highlight active item
+            document
+              .querySelectorAll('.api-file-item')
+              .forEach((el) => el.classList.remove('active'));
+            item.classList.add('active');
+
+            // Load Content
+            currentFile = path;
+            currentContent = headers[path];
+
+            // Refresh View
+            if (viewMode === 'doc') {
+              renderDocView();
+            } else {
+              rawViewer.textContent = currentContent;
+            }
+          };
+          fileList.appendChild(item);
+        });
+      };
+
+      // Initial populate
+      populateList();
+      setViewMode('doc'); // Default to doc view
+
+      // Search functionality
+      if (searchInput) {
+        searchInput.oninput = (e) => populateList(e.target.value);
+        searchInput.focus();
+      }
+    } else {
+      fileList.innerHTML =
+        '<div style="padding: 10px; color: #888;">No GBDK headers available. Initialize compiler first.</div>';
+    }
+  }
+
+  // Close logic (re-bind to fix scope issues)
+  const closeModal = () => modal.classList.add('hidden');
+  if (closeBtn) closeBtn.onclick = closeModal;
+
+  // Window click logic
+  const oldOnClick = window.onclick;
+  window.onclick = (event) => {
+    if (oldOnClick) oldOnClick(event);
     if (event.target === modal) {
       closeModal();
     }

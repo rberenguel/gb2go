@@ -344,11 +344,7 @@ export class GameBoyEmulator {
       // Access frame buffer directly from WASM memory
       // Note: We use the raw memory to avoid copying it twice if possible,
       // but to apply the palette we must iterate anyway.
-      const wasmBuffer = new Uint8Array(
-        this.module.HEAPU8.buffer,
-        frameBufferPtr,
-        frameBufferSize
-      );
+      const wasmBuffer = new Uint8Array(this.module.HEAPU8.buffer, frameBufferPtr, frameBufferSize);
 
       const targetData = this.imageData.data;
       const palette = this.palette;

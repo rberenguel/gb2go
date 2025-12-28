@@ -19,17 +19,11 @@
   "categories": ["development", "games", "education"],
   "screenshots": [
     {
-      "src": "./screenshots/desktop.png",
-      "sizes": "1280x720",
+      "src": "./gb2go.png",
+      "sizes": "1280x999",
       "type": "image/png",
       "form_factor": "wide",
       "label": "GB2GO IDE on desktop"
-    },
-    {
-      "src": "./screenshots/tablet.png",
-      "sizes": "1024x768",
-      "type": "image/png",
-      "label": "GB2GO IDE on tablet"
     }
   ]
 }
