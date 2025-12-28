@@ -4,6 +4,7 @@
  */
 
 import { GBDKCompiler } from './core/compiler.js';
+import { GameBoyEmulator } from './core/emulator.js';
 import { helloWorldTemplate } from './templates/hello-world.js';
 
 // Application state
@@ -44,9 +45,18 @@ async function init() {
 
     await app.compiler.initialize();
 
-    // TODO: Initialize emulator
-    // app.emulator = new GameBoyEmulator();
-    // await app.emulator.initialize();
+    // Initialize emulator
+    log('Initializing Game Boy emulator...', 'info');
+    app.emulator = new GameBoyEmulator();
+
+    // Set up emulator callbacks
+    app.emulator.onError = (message) => log(message, 'error');
+    app.emulator.onFrame = () => {
+      // Called every frame - could be used for performance monitoring
+    };
+
+    const canvas = document.getElementById('emulator-canvas');
+    await app.emulator.initialize(canvas);
 
     // Initialize UI
     initUI();
@@ -57,7 +67,7 @@ async function init() {
     // Hide loading overlay
     hideLoading();
 
-    log('GB2GO ready! Compiler initialized and ready to test.', 'success');
+    log('GB2GO ready! Compiler and emulator initialized.', 'success');
     log('Click "Compile" to build the Hello World program.', 'info');
 
   } catch (error) {
@@ -168,8 +178,11 @@ function initTouchControls() {
  * Handle button press/release for emulator
  */
 function handleButtonPress(button, pressed) {
-  // TODO: Send to emulator when implemented
-  console.log(`Button ${button}: ${pressed ? 'pressed' : 'released'}`);
+  if (app.emulator) {
+    app.emulator.setButton(button, pressed);
+  } else {
+    console.log(`Button ${button}: ${pressed ? 'pressed' : 'released'}`);
+  }
 }
 
 /**
@@ -239,7 +252,22 @@ async function handleCompile() {
     app.compiledRom = romData;
 
     log(`✓ ROM compiled successfully! (${romData.length} bytes)`, 'success');
-    log('ROM is ready. Emulator integration coming in Phase 5.', 'info');
+
+    // Debug: Show ROM entry point
+    const entryBytes = Array.from(romData.slice(0x100, 0x104))
+      .map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
+      .join(' ');
+    log(`Entry point (0x0100): ${entryBytes}`, 'info');
+
+    // Verify header checksum
+    let checksum = 0;
+    for (let i = 0x0134; i <= 0x014C; i++) {
+      checksum = checksum - romData[i] - 1;
+    }
+    const isValid = (checksum & 0xFF) === romData[0x014D];
+    log(`Header checksum: ${isValid ? '✓ Valid' : '✗ Invalid'}`, isValid ? 'success' : 'error');
+
+    log('ROM ready to run. Click "Run" to start the emulator.', 'info');
 
     // Enable run button
     if (runBtn) runBtn.disabled = false;
@@ -253,22 +281,110 @@ async function handleCompile() {
   }
 }
 
-function handleRun() {
+async function handleRun() {
   if (!app.compiledRom) {
     log('No ROM compiled yet. Click "Compile" first.', 'warning');
     return;
   }
 
-  log('Run button clicked. Emulator not yet implemented (Phase 5).', 'warning');
-  log(`ROM ready: ${app.compiledRom.length} bytes`, 'info');
+  if (!app.emulator) {
+    log('Emulator not initialized.', 'error');
+    return;
+  }
+
+  try {
+    const runBtn = document.getElementById('btn-run');
+    const pauseBtn = document.getElementById('btn-pause');
+    const resetBtn = document.getElementById('btn-reset');
+
+    // Download ROM for testing with external emulators
+    downloadROM(app.compiledRom, app.currentFile.replace('.c', '.gb'));
+    log('ROM downloaded! You can test it with any Game Boy emulator.', 'info');
+
+    // Load ROM into emulator
+    log('Loading ROM into emulator...', 'info');
+    await app.emulator.loadROM(app.compiledRom);
+    log('ROM loaded! Starting emulator...', 'success');
+
+    // Start the emulator
+    app.emulator.start();
+    log('Emulator running! Use on-screen controls or keyboard.', 'info');
+
+    // Update button states
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.hidden = true;
+    }
+    if (pauseBtn) {
+      pauseBtn.disabled = false;
+      pauseBtn.hidden = false;
+    }
+    if (resetBtn) {
+      resetBtn.disabled = false;
+    }
+  } catch (error) {
+    log(`Failed to run ROM: ${error.message}`, 'error');
+    console.error('Run error:', error);
+  }
 }
 
 function handlePause() {
-  log('Pause button clicked. Emulator not yet implemented (Phase 5).', 'warning');
+  if (!app.emulator) {
+    return;
+  }
+
+  const runBtn = document.getElementById('btn-run');
+  const pauseBtn = document.getElementById('btn-pause');
+
+  if (app.emulator.isRunning) {
+    app.emulator.pause();
+    log('Emulator paused.', 'info');
+
+    // Update button states
+    if (runBtn) {
+      runBtn.disabled = false;
+      runBtn.hidden = false;
+      runBtn.innerHTML = '<span class="btn-icon">▶️</span> Resume';
+    }
+    if (pauseBtn) {
+      pauseBtn.hidden = true;
+    }
+  } else {
+    app.emulator.start();
+    log('Emulator resumed.', 'info');
+
+    // Update button states
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.hidden = true;
+    }
+    if (pauseBtn) {
+      pauseBtn.disabled = false;
+      pauseBtn.hidden = false;
+    }
+  }
 }
 
 function handleReset() {
-  log('Reset button clicked. Emulator not yet implemented (Phase 5).', 'warning');
+  if (!app.emulator) {
+    return;
+  }
+
+  const runBtn = document.getElementById('btn-run');
+  const pauseBtn = document.getElementById('btn-pause');
+
+  app.emulator.reset();
+  log('Emulator reset.', 'info');
+
+  // Update button states
+  if (runBtn) {
+    runBtn.disabled = false;
+    runBtn.hidden = false;
+    runBtn.innerHTML = '<span class="btn-icon">▶️</span> Run';
+  }
+  if (pauseBtn) {
+    pauseBtn.hidden = true;
+  }
 }
 
 function handleExport() {
@@ -312,6 +428,20 @@ function clearConsole() {
   if (consoleOutput) {
     consoleOutput.innerHTML = '<div class="console-line console-info">Console cleared.</div>';
   }
+}
+
+/**
+ * Download ROM file
+ */
+function downloadROM(romData, filename = 'game.gb') {
+  const blob = new Blob([romData], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  console.log(`ROM downloaded: ${filename} (${romData.length} bytes)`);
 }
 
 /**

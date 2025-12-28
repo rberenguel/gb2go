@@ -431,18 +431,61 @@ export class GBDKCompiler {
    * @private
    */
   _ensureGameBoyHeader(rom) {
-    // Nintendo logo is at 0x0104-0x0133
-    // If it's empty, add a minimal valid header
+    // Nintendo logo at 0x0104-0x0133 (48 bytes) - REQUIRED for boot
+    const nintendoLogo = [
+      0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83,
+      0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
+      0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99, 0xBB, 0xBB, 0x67, 0x63,
+      0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
+    ];
 
-    // For now, we'll just ensure the header checksum area exists
-    // A real implementation would need proper header generation
-    // This is a placeholder for basic functionality
+    for (let i = 0; i < nintendoLogo.length; i++) {
+      rom[0x0104 + i] = nintendoLogo[i];
+    }
 
     // Title at 0x0134-0x0143 (16 bytes)
     const title = 'GB2GO';
-    for (let i = 0; i < title.length && i < 16; i++) {
-      rom[0x0134 + i] = title.charCodeAt(i);
+    for (let i = 0; i < 16; i++) {
+      rom[0x0134 + i] = i < title.length ? title.charCodeAt(i) : 0;
     }
+
+    // Cartridge type at 0x0147 (0x00 = ROM ONLY)
+    rom[0x0147] = 0x00;
+
+    // ROM size at 0x0148 (0x00 = 32KB)
+    rom[0x0148] = 0x00;
+
+    // RAM size at 0x0149 (0x00 = No RAM)
+    rom[0x0149] = 0x00;
+
+    // Destination code at 0x014A (0x01 = Non-Japanese)
+    rom[0x014A] = 0x01;
+
+    // Old licensee code at 0x014B (0x33 = Check new licensee)
+    rom[0x014B] = 0x33;
+
+    // Mask ROM version at 0x014C
+    rom[0x014C] = 0x00;
+
+    // Header checksum at 0x014D
+    // Checksum is calculated over 0x0134-0x014C
+    let checksum = 0;
+    for (let i = 0x0134; i <= 0x014C; i++) {
+      checksum = checksum - rom[i] - 1;
+    }
+    rom[0x014D] = checksum & 0xFF;
+
+    // Global checksum at 0x014E-0x014F (not checked by Game Boy, but calculate anyway)
+    let globalChecksum = 0;
+    for (let i = 0; i < rom.length; i++) {
+      if (i !== 0x014E && i !== 0x014F) {
+        globalChecksum = (globalChecksum + rom[i]) & 0xFFFF;
+      }
+    }
+    rom[0x014E] = (globalChecksum >> 8) & 0xFF;
+    rom[0x014F] = globalChecksum & 0xFF;
+
+    console.log('ROM header generated with checksums');
   }
 
   /**

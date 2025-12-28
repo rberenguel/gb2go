@@ -175,14 +175,16 @@ button, .toolbar, .panel-header {
 }
 
 .btn-icon-small {
-  padding: var(--spacing-xs);
   background: transparent;
   border: none;
   color: var(--color-text-secondary);
   cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
   transition: color 0.2s ease;
+}
+
+#btnnew-file {
+  font-size: 130%;
+  line-height: 0;
 }
 
 .btn-icon-small:hover {

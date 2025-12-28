@@ -168,18 +168,20 @@ gb2go/
 
 **Critical File**: `src/core/emulator.js`
 
-- [ ] Create GameBoyEmulator class
-- [ ] Implement `initialize()` - Load binjgb.wasm
-- [ ] Implement `loadROM(romData)` - Write ROM to virtual FS
-- [ ] Implement `start()`, `pause()`, `reset()` - Playback controls
-- [ ] Implement `runFrame()` animation loop
-- [ ] Implement keyboard input handling (arrow keys, Z/X, Enter/Space)
-- [ ] Implement `setButton(button, pressed)` method
-- [ ] Create virtual D-pad UI for touch
-- [ ] Create A/B button UI for touch
-- [ ] Handle touch events with preventDefault
+- [x] Create GameBoyEmulator class
+- [x] Implement `initialize()` - Load binjgb.wasm
+- [x] Implement `loadROM(romData)` - Write ROM to virtual FS
+- [x] Implement `start()`, `pause()`, `reset()` - Playback controls
+- [x] Implement `runFrame()` animation loop
+- [x] Implement `setButton(button, pressed)` method
+- [x] Virtual D-pad UI for touch (already in index.html)
+- [x] A/B button UI for touch (already in index.html)
+- [x] Touch events with preventDefault (integrated in main.js)
+- [ ] Add keyboard input handling (arrow keys, Z/X, Enter/Space)
 - [ ] Add haptic feedback if available
-- [ ] Test emulator with known working ROM
+- [x] Test emulator with compiled ROM
+
+**Note**: User runs the web server (not the assistant). Use `python3 -m http.server 8080` or similar.
 
 ### Phase 6: UI Components
 
