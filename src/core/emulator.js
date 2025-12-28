@@ -35,7 +35,51 @@ export class GameBoyEmulator {
     this.onFrame = null;
     this.onError = null;
 
-    console.log('GameBoyEmulator: Created');
+    // Palette definitions
+    this.PALETTES = {
+      // Classic "pea soup" green
+      dmg: [
+        [15, 56, 15], // Darkest (Black) -> #0f380f
+        [48, 98, 48], // Dark (Dark Gray) -> #306230
+        [139, 172, 15], // Light (Light Gray) -> #8bac0f
+        [155, 188, 15], // Lightest (White) -> #9bbc0f
+      ],
+      // Neutral grayscale
+      gray: [
+        [0, 0, 0], // Darkest
+        [85, 85, 85], // Dark
+        [170, 170, 170], // Light
+        [255, 255, 255], // Lightest
+      ],
+      // Game Boy Pocket (softer gray)
+      pocket: [
+        [40, 40, 40], // Darkest
+        [90, 90, 90], // Dark
+        [160, 160, 160], // Light
+        [220, 220, 220], // Lightest
+      ],
+    };
+
+    this.currentPaletteName = 'dmg';
+    this.palette = this.PALETTES[this.currentPaletteName];
+  }
+
+  /**
+   * Set the color palette
+   * @param {string} name - Palette name ('dmg', 'gray', 'pocket')
+   */
+  setPalette(name) {
+    if (this.PALETTES[name]) {
+      this.currentPaletteName = name;
+      this.palette = this.PALETTES[name];
+      console.log(`GameBoyEmulator: Palette set to ${name}`);
+      // Force re-render if not running
+      if (!this.isRunning && this.emulator) {
+        this._renderFrame();
+      }
+    } else {
+      console.warn(`GameBoyEmulator: Unknown palette "${name}"`);
+    }
   }
 
   /**
@@ -297,14 +341,44 @@ export class GameBoyEmulator {
         return;
       }
 
-      // Copy frame buffer from WASM to ImageData
-      const frameBuffer = new Uint8Array(
+      // Access frame buffer directly from WASM memory
+      // Note: We use the raw memory to avoid copying it twice if possible,
+      // but to apply the palette we must iterate anyway.
+      const wasmBuffer = new Uint8Array(
         this.module.HEAPU8.buffer,
         frameBufferPtr,
         frameBufferSize
       );
 
-      this.imageData.data.set(frameBuffer);
+      const targetData = this.imageData.data;
+      const palette = this.palette;
+
+      // Apply palette mapping
+      // binjgb outputs RGBA, but it's grayscale (R=G=B)
+      // We read the red channel (index i) to determine brightness
+      for (let i = 0; i < frameBufferSize; i += 4) {
+        // Get brightness from Red channel (0-255)
+        const brightness = wasmBuffer[i];
+
+        // Map brightness to palette index (0-3)
+        // 0 (Black) -> 0
+        // 85 (Dark Gray) -> 1
+        // 170 (Light Gray) -> 2
+        // 255 (White) -> 3
+        // We use ranges to be safe against slight variations
+        let colorIndex = 0;
+        if (brightness > 212) colorIndex = 3;
+        else if (brightness > 127) colorIndex = 2;
+        else if (brightness > 42) colorIndex = 1;
+        else colorIndex = 0;
+
+        const [r, g, b] = palette[colorIndex];
+
+        targetData[i] = r; // R
+        targetData[i + 1] = g; // G
+        targetData[i + 2] = b; // B
+        targetData[i + 3] = 255; // Alpha (Always solid)
+      }
 
       // Render to canvas
       this.ctx.putImageData(this.imageData, 0, 0);

@@ -188,30 +188,22 @@ gb2go/
 
 ### Phase 6: UI Components
 
-- [ ] Create `src/ui/editor.js`
-  - [ ] Import CodeMirror from lib/codemirror/
-  - [ ] Create CodeEditor class
-  - [ ] Configure C/C++ language mode
-  - [ ] Add GBDK-specific autocomplete
-  - [ ] Implement file loading
-  - [ ] Add debouncing (500ms)
-- [ ] Create `src/ui/toolbar.js`
-  - [ ] Add Compile button
-  - [ ] Add Run/Pause/Reset buttons
-  - [ ] Add Export/Import ZIP buttons
-- [ ] Create `src/ui/file-browser.js`
-  - [ ] List project files
-  - [ ] Handle file selection
-  - [ ] Add new file functionality
-- [ ] Create `src/templates/hello-world.js` with default C code
-- [ ] Create `src/main.js`
-  - [ ] Initialize storage, compiler, emulator
-  - [ ] Setup editor
-  - [ ] Load or create project
-  - [ ] Wire up UI components
-  - [ ] Add error/log display
-- [ ] Update `index.html` with complete UI structure
-- [ ] Update `src/styles.css` with responsive, iPad-optimized styling
+### Phase 6: UI Components
+
+- [x] Create `src/templates/hello-world.js` with default C code
+- [x] Create `src/main.js`
+  - [x] Initialize storage (partial), compiler, emulator
+  - [x] Setup editor
+  - [x] Load or create project
+  - [x] Wire up UI components (Toolbar, File Browser stub)
+  - [x] Add error/log display
+  - [x] Implement About Dialog
+- [x] Update `index.html` with complete UI structure
+- [x] Update `src/styles.css` with responsive, iPad-optimized styling
+- [ ] Refactor UI components into separate files (currently all in main.js)
+  - [ ] `src/ui/editor.js`
+  - [ ] `src/ui/toolbar.js`
+  - [ ] `src/ui/file-browser.js`
 
 ### Phase 7: PWA & Testing
 
