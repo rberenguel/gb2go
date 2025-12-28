@@ -15,7 +15,7 @@ void main(void) {
     // gprintf writes text to the bitmap layer, compatible with shapes
     gotogxy(3, 2);
     gprintf(" *** GB2GO ***");
-    gotogxy(2, 3);
+    gotogxy(1, 3);
     gprintf("Shapes & Text Demo");
 
     // 2. Draw a border
