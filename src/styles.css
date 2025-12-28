@@ -269,6 +269,7 @@ html, body {
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: color 0.2s ease;
+  line-height: 0;
 }
 
 #btnnew-file {
@@ -304,6 +305,7 @@ html, body {
 
 .panel.collapsed .panel-header h2,
 .panel.collapsed .panel-header .app-title,
+.panel.collapsed .panel-header #btn-new-file,
 .panel.collapsed .panel-content {
   display: none !important;
 }
@@ -311,6 +313,7 @@ html, body {
 .panel.collapsed .panel-header {
   justify-content: center;
   padding: 8px 0;
+  line-height: 0;
 }
 
 #file-browser-panel {

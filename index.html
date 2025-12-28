@@ -20,6 +20,7 @@
   <!-- Styles -->
   <link rel="stylesheet" href="./src/styles.css">
   <link rel="stylesheet" href="./fonts/monoid.css">
+  <link rel="stylesheet" href="./fonts/iconoir/iconoir.css">
 
   <!-- Import Map for CodeMirror -->
   <script type="importmap">
@@ -43,35 +44,28 @@
 
       <div class="toolbar-section toolbar-actions">
         <button id="btn-compile" class="btn btn-primary" title="Compile project (Ctrl+B)">
-          <span class="btn-icon">⚙️</span>
-          Compile
+          <i class="iconoir-hammer"></i>
         </button>
         <button id="btn-run" class="btn btn-success" title="Run in emulator" disabled>
-          <span class="btn-icon">▶️</span>
-          Run
+          <i class="iconoir-play"></i>
         </button>
         <button id="btn-pause" class="btn" title="Pause emulator" disabled hidden>
-          <span class="btn-icon">⏸️</span>
-          Pause
+          <i class="iconoir-pause"></i>
         </button>
         <button id="btn-reset" class="btn" title="Reset emulator" disabled>
-          <span class="btn-icon">🔄</span>
-          Reset
+          <i class="iconoir-restart"></i>
         </button>
         <button id="btn-download" class="btn" title="Download ROM (.gb)" disabled>
-          <span class="btn-icon">⬇️</span>
-          Download
+          <i class="iconoir-download"></i>
         </button>
       </div>
 
       <div class="toolbar-section toolbar-actions">
         <button id="btn-export" class="btn" title="Export project as ZIP">
-          <span class="btn-icon">💾</span>
-          Export
+          <i class="iconoir-floppy-disk"></i>
         </button>
         <button id="btn-import" class="btn" title="Import project from ZIP">
-          <span class="btn-icon">📂</span>
-          Import
+          <i class="iconoir-import"></i>
         </button>
       </div>
     </div>
