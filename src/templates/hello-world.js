@@ -23,9 +23,10 @@ void main(void) {
     box(0, 0, 159, 143, M_NOFILL);
 
     // 3. Draw some static shapes
+    color(BLACK, BLACK, SOLID); // Needs fill color here
     box(10, 40, 40, 70, M_FILL);       // Filled Box
     circle(120, 55, 20, M_NOFILL);     // Circle
-    
+    color(BLACK, WHITE, SOLID); // Undo fill, otherwise text will be weird on the next frame
     // Triangle
     line(60, 70, 80, 40);
     line(80, 40, 100, 70);
@@ -41,7 +42,7 @@ void main(void) {
     gprintf("the box below!");
 
     x = 80;
-    y = 110;
+    y = 120;
 
     // Main Loop
     while(1) {
