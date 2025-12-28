@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1e1e1e">
+
+  <title>GB2GO - Game Boy Development IDE</title>
+  <meta name="description" content="Browser-based Game Boy development environment with GBDK compiler and emulator">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="./src/styles.css">
+
+  <!-- Import Map for CodeMirror -->
+  <script type="importmap">
+    {
+      "imports": {
+        "CodeMirrorBundle": "./lib/codemirror/codemirror-bundle.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Main Application Container -->
+  <div id="app">
+
+    <!-- Toolbar -->
+    <div id="toolbar">
+      <div class="toolbar-section">
+        <h1 class="app-title">GB2GO</h1>
+        <span class="app-subtitle">Game Boy Development IDE</span>
+      </div>
+
+      <div class="toolbar-section toolbar-actions">
+        <button id="btn-compile" class="btn btn-primary" title="Compile project (Ctrl+B)">
+          <span class="btn-icon">⚙️</span>
+          Compile
+        </button>
+        <button id="btn-run" class="btn btn-success" title="Run in emulator" disabled>
+          <span class="btn-icon">▶️</span>
+          Run
+        </button>
+        <button id="btn-pause" class="btn" title="Pause emulator" disabled hidden>
+          <span class="btn-icon">⏸️</span>
+          Pause
+        </button>
+        <button id="btn-reset" class="btn" title="Reset emulator" disabled>
+          <span class="btn-icon">🔄</span>
+          Reset
+        </button>
+      </div>
+
+      <div class="toolbar-section toolbar-actions">
+        <button id="btn-export" class="btn" title="Export project as ZIP">
+          <span class="btn-icon">💾</span>
+          Export
+        </button>
+        <button id="btn-import" class="btn" title="Import project from ZIP">
+          <span class="btn-icon">📂</span>
+          Import
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="main-content">
+
+      <!-- Left Panel: File Browser -->
+      <div id="file-browser-panel" class="panel">
+        <div class="panel-header">
+          <h2>Files</h2>
+          <button id="btn-new-file" class="btn-icon-small" title="New file">+</button>
+        </div>
+        <div id="file-browser" class="panel-content">
+          <!-- File tree will be rendered here -->
+        </div>
+      </div>
+
+      <!-- Middle Panel: Code Editor -->
+      <div id="editor-panel" class="panel panel-main">
+        <div class="panel-header">
+          <h2 id="current-file-name">main.c</h2>
+        </div>
+        <div id="editor-container" class="panel-content">
+          <!-- CodeMirror editor will be mounted here -->
+        </div>
+        <div id="console-container" class="console">
+          <div class="console-header">
+            <h3>Console</h3>
+            <button id="btn-clear-console" class="btn-icon-small" title="Clear console">×</button>
+          </div>
+          <div id="console-output" class="console-output">
+            <div class="console-line console-info">GB2GO ready. Click "Compile" to build your project.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Emulator -->
+      <div id="emulator-panel" class="panel">
+        <div class="panel-header">
+          <h2>Emulator</h2>
+        </div>
+        <div id="emulator-container" class="panel-content">
+          <canvas id="emulator-canvas" width="160" height="144"></canvas>
+
+          <!-- Touch Controls for iPad -->
+          <div id="touch-controls">
+            <div class="dpad-container">
+              <button class="dpad-btn dpad-up" data-button="up">▲</button>
+              <button class="dpad-btn dpad-down" data-button="down">▼</button>
+              <button class="dpad-btn dpad-left" data-button="left">◀</button>
+              <button class="dpad-btn dpad-right" data-button="right">▶</button>
+              <div class="dpad-center"></div>
+            </div>
+
+            <div class="action-buttons">
+              <button class="action-btn btn-b" data-button="b">B</button>
+              <button class="action-btn btn-a" data-button="a">A</button>
+            </div>
+
+            <div class="start-select-buttons">
+              <button class="small-btn" data-button="select">Select</button>
+              <button class="small-btn" data-button="start">Start</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div id="loading-overlay" class="loading-overlay" hidden>
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+
+  <!-- File input for importing -->
+  <input type="file" id="file-input" accept=".zip" hidden>
+
+  <!-- Main Application Script -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

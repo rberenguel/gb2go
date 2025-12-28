@@ -66,27 +66,27 @@ gb2go/
 
 ### Phase 0: Build Tools Setup
 
-- [ ] Create `build/` directory
-- [ ] Create `build/package.json` with gbdk-emscripten dependency
-- [ ] Run `npm install` in build/ directory
-- [ ] Write `build/extract-wasm.js` script
-  - [ ] Extract lcc compiler WASM + JS glue code
-  - [ ] Extract sdasgb assembler WASM + JS glue code
-  - [ ] Extract sdldgb linker WASM + JS glue code
-  - [ ] Extract makebin converter WASM + JS glue code
-  - [ ] Modify glue code for browser compatibility (remove Node.js APIs)
-  - [ ] Output all to `../lib/wasm/`
-- [ ] Write `build/extract-resources.js` script
-  - [ ] Extract all GBDK header files (.h) from gbdk-emscripten
-  - [ ] Bundle headers into `../lib/resources/headers.json`
-  - [ ] Extract all GBDK library files (.lib)
-  - [ ] Bundle libraries into `../lib/resources/libraries.json`
-- [ ] Write `build/build-emulator.sh` script
-  - [ ] Clone binjgb repository
-  - [ ] Build binjgb with Emscripten for browser
-  - [ ] Copy binjgb.wasm and binjgb.js to `../lib/wasm/`
-- [ ] Run extraction scripts to populate `lib/` directory
-- [ ] Verify all WASM files and resources are extracted correctly
+- [x] Create `build/` directory
+- [x] Create `build/package.json` with gbdk-emscripten dependency
+- [x] Run `npm install` in build/ directory
+- [x] Write `build/extract-wasm.js` script
+  - [x] Extract sdcc compiler WASM + JS glue code
+  - [x] Extract sdcpp preprocessor WASM + JS glue code
+  - [x] Extract as-gbz80 assembler WASM + JS glue code
+  - [x] Extract link-gbz80 linker WASM + JS glue code
+  - [x] Glue code already browser-compatible (Emscripten auto-detects)
+  - [x] Output all to `../lib/wasm/`
+- [x] Write `build/extract-resources.js` script
+  - [x] Extract all GBDK header files (.h) from gbdk-emscripten
+  - [x] Bundle headers into `../lib/resources/headers.json` (25 files, 45.56 KB)
+  - [x] Extract all GBDK library files (.lib)
+  - [x] Bundle libraries into `../lib/resources/libraries.json` (2 files, 1.02 KB)
+- [x] Write `build/build-emulator.sh` script
+  - [x] Clone binjgb repository
+  - [x] Build binjgb with Emscripten for browser
+  - [x] Copy binjgb.wasm and binjgb.js to `../lib/wasm/`
+- [x] Run extraction scripts to populate `lib/` directory
+- [x] Verify all WASM files and resources are extracted correctly
 
 ### Phase 1: Foundation & Structure
 
@@ -101,46 +101,49 @@ gb2go/
   - [x] Create `src/templates/` directory
 - [x] Copy CodeMirror bundle from YACME
   - [x] Copy `../yacme/bundles/codemirror-bundle.js` to `lib/codemirror/codemirror-bundle.js`
-- [ ] Create `index.html` with basic structure
-  - [ ] Add viewport meta tags for iPad
-  - [ ] Add PWA meta tags
-  - [ ] Add import map for CodeMirror (see usage below)
-  - [ ] Link to styles
-  - [ ] Add canvas for emulator
-  - [ ] Add script imports
-- [ ] Create `manifest.json` for PWA
-  - [ ] Set app name, icons, colors
-  - [ ] Configure display mode as standalone
-- [ ] Create `src/styles.css` with basic layout
-- [ ] Create `.gitignore` (ignore build/node_modules)
+- [x] Create `index.html` with basic structure
+  - [x] Add viewport meta tags for iPad
+  - [x] Add PWA meta tags
+  - [x] Add import map for CodeMirror (see usage below)
+  - [x] Link to styles
+  - [x] Add canvas for emulator
+  - [x] Add script imports
+- [x] Create `manifest.json` for PWA
+  - [x] Set app name, icons, colors
+  - [x] Configure display mode as standalone
+- [x] Create `src/styles.css` with basic layout
+- [x] Create `.gitignore` (ignore build/node_modules)
 
 ### Phase 2: Virtual Filesystem
 
 **Critical File**: `src/core/vfs.js`
 
-- [ ] Create VirtualFS class
-- [ ] Implement `initModule(Module, name)` - Initialize FS for each WASM module
-- [ ] Implement `preloadResources()` - Load GBDK headers/libs into virtual `/include` and `/lib`
-- [ ] Implement `writeFile(moduleName, path, content)` - Support text and binary modes
-- [ ] Implement `readFile(moduleName, path)` - Support text and binary modes
-- [ ] Implement `mkdirp(moduleName, path)` - Create directory trees
-- [ ] Implement `listFiles()`, `deleteFile()` helpers
-- [ ] Test with mock WASM module
+- [x] Create VirtualFS class
+- [x] Implement `initModule(Module, name)` - Initialize FS for each WASM module
+- [x] Implement `preloadResources()` - Load GBDK headers/libs into virtual `/include` and `/lib`
+- [x] Implement `writeFile(moduleName, path, content)` - Support text and binary modes
+- [x] Implement `readFile(moduleName, path)` - Support text and binary modes
+- [x] Implement `mkdirp(moduleName, path)` - Create directory trees
+- [x] Implement `listFiles()`, `deleteFile()` helpers
+- [x] Additional features: `fileExists()`, `stat()`, `copyFile()`, debug utilities
+- [ ] Test with mock WASM module (will test in Phase 3 with real compiler)
 
 ### Phase 3: Compiler Pipeline
 
 **Critical File**: `src/core/compiler.js`
 
-- [ ] Create GBDKCompiler class
-- [ ] Implement `loadWasmModule(jsPath)` helper
-- [ ] Implement `initialize()` - Load all WASM modules (lcc, sdasgb, sdldgb, makebin)
-- [ ] Implement `compile(project)` - Orchestrate full pipeline
-- [ ] Implement `runLCC(inputFile, outputFile)` - C to Assembly
-- [ ] Implement `runSdasgb(inputFile, outputFile)` - ASM to Object
-- [ ] Implement `runSdldgb(objFiles, outputFile)` - Objects to HEX
-- [ ] Implement `runMakebin(inputFile, outputFile)` - HEX to GB ROM
-- [ ] Implement `runCommand(module, name, args)` - Generic WASM executor
-- [ ] Test with simple "Hello World" C program
+- [x] Create GBDKCompiler class
+- [x] Implement `_loadWasmModule(jsPath)` helper
+- [x] Implement `initialize()` - Load all WASM modules (sdcpp, sdcc, as-gbz80, link-gbz80)
+- [x] Implement `compile(options)` - Orchestrate full 5-step pipeline
+- [x] Implement `_preprocess()` - C preprocessing with sdcpp
+- [x] Implement `_compileToAssembly()` - C to Assembly with sdcc
+- [x] Implement `_assemble()` - Assembly to Object with as-gbz80
+- [x] Implement `_link()` - Object files to Intel HEX with link-gbz80
+- [x] Implement `_ihxToRom()` - Intel HEX to .gb ROM format
+- [x] Implement `_runModule()` - Generic WASM executor with stdout/stderr capture
+- [x] Intel HEX parser and ROM header generation
+- [x] Test with simple "Hello World" C program - **SUCCESSFULLY COMPILED!**
 
 ### Phase 4: Storage
 

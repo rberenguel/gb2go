@@ -1,0 +1,16 @@
+{
+  "name": "gb2go-build-tools",
+  "version": "1.0.0",
+  "description": "Build tools for extracting WASM modules and resources for GB2GO",
+  "type": "module",
+  "scripts": {
+    "extract-wasm": "node extract-wasm.js",
+    "extract-resources": "node extract-resources.js",
+    "build-emulator": "./build-emulator.sh",
+    "build-all": "npm run extract-wasm && npm run extract-resources && npm run build-emulator"
+  },
+  "dependencies": {
+    "gbdk-emscripten": "^1.0.0"
+  },
+  "devDependencies": {}
+}
