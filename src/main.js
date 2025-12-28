@@ -105,6 +105,12 @@ function initUI() {
     btnReset.addEventListener('click', handleReset);
   }
 
+  // Download button
+  const btnDownload = document.getElementById('btn-download');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', handleDownload);
+  }
+
   // Export button
   const btnExport = document.getElementById('btn-export');
   if (btnExport) {
@@ -137,6 +143,56 @@ function initUI() {
 
   // Initialize touch controls
   initTouchControls();
+
+  // Initialize File Browser (Mock)
+  const fileBrowser = document.getElementById('file-browser');
+  if (fileBrowser) {
+    fileBrowser.innerHTML = `
+      <div class="file-tree-item active" title="Source File">
+        <span style="margin-right: 5px;">📄</span> main.c
+      </div>
+      <div class="file-tree-item" style="opacity: 0.6; cursor: default;" title="Not implemented">
+        <span style="margin-right: 5px;">⚙️</span> project.json
+      </div>
+    `;
+  }
+
+  // Sidebar Toggles
+  const toggleFilesBtn = document.getElementById('toggle-files');
+  const filePanel = document.getElementById('file-browser-panel');
+  if (toggleFilesBtn && filePanel) {
+    toggleFilesBtn.addEventListener('click', () => {
+      filePanel.classList.toggle('collapsed');
+      const isCollapsed = filePanel.classList.contains('collapsed');
+      
+      if (isCollapsed) {
+        // fileBrowser.style.display = 'none'; // handled by CSS
+        toggleFilesBtn.textContent = '▶';
+        toggleFilesBtn.title = 'Expand';
+      } else {
+        // fileBrowser.style.display = 'block'; // handled by CSS
+        toggleFilesBtn.textContent = '◀';
+        toggleFilesBtn.title = 'Collapse';
+      }
+    });
+  }
+
+  const toggleEmuBtn = document.getElementById('toggle-emulator');
+  const emuPanel = document.getElementById('emulator-panel');
+  if (toggleEmuBtn && emuPanel) {
+    toggleEmuBtn.addEventListener('click', () => {
+      emuPanel.classList.toggle('collapsed');
+      const isCollapsed = emuPanel.classList.contains('collapsed');
+
+      if (isCollapsed) {
+        toggleEmuBtn.textContent = '◀'; // Arrow points left to expand
+        toggleEmuBtn.title = 'Expand';
+      } else {
+        toggleEmuBtn.textContent = '▶'; // Arrow points right to collapse
+        toggleEmuBtn.title = 'Collapse';
+      }
+    });
+  }
 
   console.log('UI initialized');
 }
@@ -188,34 +244,123 @@ function handleButtonPress(button, pressed) {
 /**
  * Display source code in editor area
  */
-function displaySource() {
+async function displaySource() {
   const editorContainer = document.getElementById('editor-container');
   if (!editorContainer) return;
 
-  // For now, just show the code in a textarea
-  // TODO: Replace with CodeMirror in Phase 6
-  const textarea = document.createElement('textarea');
-  textarea.id = 'source-editor';
-  textarea.value = app.currentSource;
-  textarea.style.cssText = `
-    width: 100%;
-    height: calc(100% - var(--console-height, 200px));
-    background: #1e1e1e;
-    color: #d4d4d4;
-    border: none;
-    padding: 16px;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: none;
-    outline: none;
-  `;
+  editorContainer.innerHTML = '';
 
-  textarea.addEventListener('input', (e) => {
-    app.currentSource = e.target.value;
-  });
+  try {
+    const { 
+      EditorState, EditorView, 
+      keymap, defaultKeymap, 
+      history, historyKeymap, 
+      oneDark, languages,
+      Decoration, ViewPlugin
+    } = await import('CodeMirrorBundle');
+    
+    // Active Line Plugin (Custom implementation since it's missing from bundle)
+    const activeLineHighlighter = ViewPlugin.fromClass(class {
+      constructor(view) {
+        this.decorations = this.getDeco(view);
+      }
+      update(update) {
+        if (update.docChanged || update.selectionSet)
+          this.decorations = this.getDeco(update.view);
+      }
+      getDeco(view) {
+        const { selection, doc } = view.state;
+        const decos = [];
+        const seenLines = new Set();
+        
+        for (const range of selection.ranges) {
+            const line = doc.lineAt(range.head);
+            if (!seenLines.has(line.from)) {
+                seenLines.add(line.from);
+                decos.push(Decoration.line({ class: "cm-activeLine" }).range(line.from));
+            }
+        }
+        // Decoration.set requires sorted decorations
+        decos.sort((a, b) => a.from - b.from);
+        return Decoration.set(decos);
+      }
+    }, {
+      decorations: v => v.decorations
+    });
 
-  editorContainer.appendChild(textarea);
+    // Build extensions
+    const extensions = [
+      oneDark,
+      history(),
+      keymap.of([...defaultKeymap, ...historyKeymap]),
+      activeLineHighlighter,
+      EditorView.theme({
+        "&": { height: "100%", backgroundColor: "#1e1e1e !important" },
+        ".cm-scroller": { overflow: "auto", fontFamily: "'Monoid', 'SF Mono', monospace !important" },
+        ".cm-content": { backgroundColor: "#1e1e1e !important", fontFamily: "'Monoid', 'SF Mono', monospace !important" },
+        ".cm-gutters": { backgroundColor: "#1e1e1e !important", borderRight: "1px solid #2d2d30" }
+      }),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+           app.currentSource = update.state.doc.toString();
+        }
+      })
+    ];
+
+    // Try to load C/C++ syntax highlighting
+    try {
+      // Look for C or C++ in the languages list (standard CM6 language-data uses 'C++')
+      const cLang = languages.find(l => l.name === 'C++' || l.alias.includes('c') || l.alias.includes('cpp'));
+      if (cLang) {
+        const cSupport = await cLang.load();
+        extensions.push(cSupport);
+        log('C syntax highlighting loaded.', 'info');
+      } else {
+        log('C language definition not found in bundle.', 'warning');
+      }
+    } catch (e) {
+      console.warn('Could not load C syntax highlighting:', e);
+      log('Syntax highlighting unavailable (using plain text).', 'warning');
+    }
+
+    // Create state and view
+    const state = EditorState.create({
+      doc: app.currentSource,
+      extensions: extensions
+    });
+
+    app.editor = new EditorView({
+      state,
+      parent: editorContainer
+    });
+
+    log('CodeMirror editor initialized.', 'info');
+
+  } catch (err) {
+    console.warn('Failed to load CodeMirror bundled modules:', err);
+    // Fallback to Textarea
+    const textarea = document.createElement('textarea');
+    textarea.id = 'source-editor';
+    textarea.value = app.currentSource;
+    textarea.style.cssText = `
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: none;
+      padding: 16px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+    `;
+    textarea.addEventListener('input', (e) => {
+      app.currentSource = e.target.value;
+    });
+    editorContainer.appendChild(textarea);
+  }
 }
 
 /**
@@ -237,6 +382,7 @@ async function handleCompile() {
 
   const compileBtn = document.getElementById('btn-compile');
   const runBtn = document.getElementById('btn-run');
+  const downloadBtn = document.getElementById('btn-download');
 
   try {
     // Disable compile button during compilation
@@ -269,8 +415,9 @@ async function handleCompile() {
 
     log('ROM ready to run. Click "Run" to start the emulator.', 'info');
 
-    // Enable run button
+    // Enable run and download buttons
     if (runBtn) runBtn.disabled = false;
+    if (downloadBtn) downloadBtn.disabled = false;
 
   } catch (error) {
     log(`✗ Compilation failed: ${error.message}`, 'error');
@@ -296,10 +443,6 @@ async function handleRun() {
     const runBtn = document.getElementById('btn-run');
     const pauseBtn = document.getElementById('btn-pause');
     const resetBtn = document.getElementById('btn-reset');
-
-    // Download ROM for testing with external emulators
-    downloadROM(app.compiledRom, app.currentFile.replace('.c', '.gb'));
-    log('ROM downloaded! You can test it with any Game Boy emulator.', 'info');
 
     // Load ROM into emulator
     log('Loading ROM into emulator...', 'info');
@@ -385,6 +528,15 @@ function handleReset() {
   if (pauseBtn) {
     pauseBtn.hidden = true;
   }
+}
+
+function handleDownload() {
+  if (!app.compiledRom) {
+    log('No ROM compiled yet.', 'warning');
+    return;
+  }
+  downloadROM(app.compiledRom, app.currentFile.replace('.c', '.gb'));
+  log('ROM downloaded.', 'success');
 }
 
 function handleExport() {
