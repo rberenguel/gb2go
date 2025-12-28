@@ -112,22 +112,16 @@ function initUI() {
   }
 
   // Export button
-  const btnExport = document.getElementById('btn-export');
-  if (btnExport) {
-    btnExport.addEventListener('click', handleExport);
-  }
+  document.getElementById('btn-export')?.addEventListener('click', handleExport);
 
   // Import button
-  const btnImport = document.getElementById('btn-import');
-  if (btnImport) {
-    btnImport.addEventListener('click', handleImport);
-  }
+  document.getElementById('btn-import')?.addEventListener('click', handleImport);
+
+  // About button
+  document.getElementById('btn-about')?.addEventListener('click', handleAbout);
 
   // New file button
-  const btnNewFile = document.getElementById('btn-new-file');
-  if (btnNewFile) {
-    btnNewFile.addEventListener('click', handleNewFile);
-  }
+  document.getElementById('btn-new-file')?.addEventListener('click', handleNewFile);
 
   // Clear console button
   const btnClearConsole = document.getElementById('btn-clear-console');
@@ -487,7 +481,8 @@ function handlePause() {
     if (runBtn) {
       runBtn.disabled = false;
       runBtn.hidden = false;
-      runBtn.innerHTML = '<span class="btn-icon">▶️</span> Resume';
+      runBtn.innerHTML = '<i class="iconoir-play"></i>';
+      runBtn.title = 'Resume emulator';
     }
     if (pauseBtn) {
       pauseBtn.hidden = true;
@@ -523,7 +518,7 @@ function handleReset() {
   if (runBtn) {
     runBtn.disabled = false;
     runBtn.hidden = false;
-    runBtn.innerHTML = '<span class="btn-icon">▶️</span> Run';
+    runBtn.innerHTML = '<i class="iconoir-play"></i>';
   }
   if (pauseBtn) {
     pauseBtn.hidden = true;
@@ -557,6 +552,47 @@ function handleFileInputChange(e) {
   if (file) {
     log(`Selected file: ${file.name}. Import not yet implemented (Phase 4).`, 'info');
   }
+}
+
+
+function handleAbout() {
+  const modal = document.getElementById('about-modal');
+  const closeBtn = document.getElementById('close-about');
+  const versionEl = document.getElementById('about-version');
+  const copyrightYearEl = document.getElementById('copyright-year');
+  
+  if (!modal) return;
+  
+  // Show modal
+  modal.classList.remove('hidden');
+  
+  // Set copyright year
+  if (copyrightYearEl) copyrightYearEl.textContent = new Date().getFullYear();
+  
+  // Fetch version from manifest if not already set
+  if (versionEl && versionEl.textContent === 'Version ...') {
+    fetch('manifest.json')
+      .then(response => response.json())
+      .then(data => {
+        versionEl.textContent = `Version ${data.version || '1.0.0'}`;
+      })
+      .catch(err => {
+        console.error('Failed to fetch manifest:', err);
+        versionEl.textContent = 'Version 1.0.0';
+      });
+  }
+
+  // Close logic
+  const closeModal = () => modal.classList.add('hidden');
+  
+  if (closeBtn) closeBtn.onclick = closeModal;
+  
+  // Close on click outside
+  window.onclick = (event) => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  };
 }
 
 /**

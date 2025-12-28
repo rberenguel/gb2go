@@ -100,7 +100,7 @@ html, body {
   width: 100%;
   margin-top: var(--spacing-md);
   background-color: #dcdcdc; /* DMG Case Color */
-  padding: 20px 10px;
+  padding: 40px 10px 60px 10px;
   border-radius: 10px 10px 40px 10px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
@@ -193,10 +193,22 @@ html, body {
 }
 
 .app-title {
-  font-size: 18px;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 22px; /* Slightly larger to match icon visually */
   font-weight: 700;
-  color: var(--color-accent);
+  font-style: italic; /* Match the "G" slant */
+  color: #3b4cca; /* Original Game Boy Blue */
   margin: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.app-logo {
+  height: 24px; /* Increased slightly */
+  width: auto;
+  margin-right: 1px; /* Tighter spacing */
+  transform: translateY(-1px); /* Optical alignment adjustment */
 }
 
 .app-subtitle {
@@ -704,4 +716,169 @@ html, body {
   #editor-panel {
     width: 100%;
   }
+}
+
+
+/* ===== Modal (Generic) ===== */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+  transition: opacity 0.2s ease, visibility 0.2s;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Ensure hidden works with transition */
+.modal.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex !important; /* Override [hidden] display:none to allow transition, or just use visibility */
+}
+
+/* Actually, to be safe with the 'hidden' attribute selector which uses !important */
+/* Let's rely on removing the class. If [hidden] attribute is used, it overrides everything. */
+/* The HTML has class="modal hidden". If we remove class 'hidden', the [hidden] attribute isn't there (unless logic adds it). */
+/* Logic uses classList.remove('hidden'). */
+
+.modal-content {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  z-index: 10;
+}
+
+.close-modal:hover {
+  color: var(--color-text-primary);
+}
+
+/* ===== About Dialog ===== */
+.about-dialog {
+  max-width: 500px;
+  text-align: center;
+  padding: var(--spacing-lg);
+}
+
+#about-title {
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  font-style: italic;
+  color: #3b4cca;
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.about-meta {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: var(--spacing-md);
+  font-family: var(--font-family-code);
+}
+
+.about-copyright,
+.about-credits {
+  font-size: 14px;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text);
+}
+
+.about-credits {
+  margin-bottom: var(--spacing-md);
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.about-links {
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+  text-align: left;
+  border: 1px solid var(--color-border);
+}
+
+.about-links p {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.about-links ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.about-links li {
+  padding: 4px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.about-footer {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: var(--color-text);
+  color: var(--color-bg-primary); /* Inverted for contrast */
+  border-radius: var(--border-radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.github-link:hover {
+  opacity: 0.9;
 }

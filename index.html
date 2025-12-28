@@ -38,8 +38,10 @@
     <!-- Toolbar -->
     <div id="toolbar">
       <div class="toolbar-section">
-        <h1 class="app-title">GB2GO</h1>
-        <span class="app-subtitle">Game Boy Development IDE</span>
+        <h1 class="app-title">
+          <img src="./icons/icon-192.png" alt="G" class="app-logo">B2GO
+        </h1>
+        <span class="app-subtitle">Game Boy development IDE in the browser</span>
       </div>
 
       <div class="toolbar-section toolbar-actions">
@@ -66,6 +68,9 @@
         </button>
         <button id="btn-import" class="btn" title="Import project from ZIP">
           <i class="iconoir-import"></i>
+        </button>
+        <button id="btn-about" class="btn" title="About GB2GO">
+            <i class="iconoir-help-circle"></i>
         </button>
       </div>
     </div>
@@ -150,7 +155,33 @@
   <!-- File input for importing -->
   <input type="file" id="file-input" accept=".zip" hidden>
 
-  <!-- Main Application Script -->
+  <!-- About Modal -->
+  <div id="about-modal" class="modal hidden">
+    <div class="modal-content about-dialog">
+        <button id="close-about" class="close-modal">&times;</button>
+        <h2 id="about-title">GB2GO</h2>
+        <p id="about-version" class="about-meta">Version ...</p>
+        <p class="about-copyright">&copy; <span id="copyright-year">...</span> Ruben Berenguel</p>
+        <p class="about-credits">Created with help from Claude and Gemini.</p>
+        
+        <div class="about-links">
+            <p><strong>Open Source Components:</strong></p>
+            <ul>
+                <li>GBDK-2020 / SDCC</li>
+                <li>Binjgb Emulator</li>
+                <li>CodeMirror 6</li>
+            </ul>
+        </div>
+        
+        <div class="about-footer">
+            <a href="https://github.com/rberenguel/gb2go" target="_blank" class="github-link">
+                <i class="iconoir-github-circle"></i> View on GitHub
+            </a>
+        </div>
+    </div>
+  </div>
+
+  <!-- App Logic -->
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
