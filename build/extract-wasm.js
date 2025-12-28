@@ -29,7 +29,8 @@ const MODULES = [
   { name: 'sdcc', description: 'SDCC C Compiler' },
   { name: 'sdcpp', description: 'SDCC Preprocessor' },
   { name: 'as-gbz80', description: 'Game Boy Z80 Assembler' },
-  { name: 'link-gbz80', description: 'Game Boy Z80 Linker' }
+  { name: 'link-gbz80', description: 'Game Boy Z80 Linker' },
+  { name: 'makebin', description: 'ROM Converter' }
 ];
 
 /**

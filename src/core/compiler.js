@@ -346,19 +346,70 @@ export class GBDKCompiler {
       console.log(`Written ${objectPath} to linker VFS`);
 
       // Change to /build directory for linking
+      // Change to /build directory for linking
       linker.FS.chdir('/build');
       console.log('Changed linker working directory to:', linker.FS.cwd());
 
+      // Manually expand libraries to object files
+      // This is necessary because link-gbz80 in WASM env doesn't reliably handle
+      // .lib files or -l flags with search paths.
+      
+      const libPaths = [
+        { dir: '/lib/small/asxxxx/gb', file: 'gb.lib' },
+        { dir: '/lib/small/asxxxx/gbz80', file: 'gbz80.lib' }
+      ];
+
+      const libraryObjects = [];
+      let crt0Path = null;
+
+      for (const { dir, file } of libPaths) {
+        try {
+          // Read the .lib file (which is just a list of .o files)
+          const libContent = this.vfs.readFile('linker', `${dir}/${file}`);
+          const objectFiles = libContent.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+          console.log(`Expanded ${file} to ${objectFiles.length} object files`);
+
+          // Add full path to each object file
+          for (const objFile of objectFiles) {
+             const fullPath = `${dir}/${objFile}`;
+             
+             // Check if this is crt0.o (must be first)
+             if (objFile === 'crt0.o') {
+               crt0Path = fullPath;
+             } else {
+               libraryObjects.push(fullPath);
+             }
+          }
+        } catch (e) {
+          console.warn(`Failed to expand library ${file}:`, e);
+        }
+      }
+
+      // Ensure crt0.o was found
+      if (!crt0Path) {
+        console.warn('crt0.o not found in libraries! ROM may not boot.');
+      }
+
       // Run link-gbz80
       // Try with -- for non-interactive command line input
+      // Order: options, crt0.o, main.o, libraries
       const args = [
         '--',            // Non-interactive command line input
         '-i',            // Generate Intel HEX format (.ihx)
-        baseName,        // Output base name (e.g., 'main')
-        `${baseName}.o`  // Input object file
+        baseName        // Output base name (e.g., 'main')
       ];
+      
+      if (crt0Path) {
+        args.push(crt0Path); // crt0.o MUST be first
+      }
+      
+      args.push(`${baseName}.o`); // Input object file
+      args.push(...libraryObjects); // All other GBDK object files
 
-      console.log(`Running link-gbz80 with args:`, args);
+      console.log(`Running link-gbz80 with ${args.length} args (crt0: ${crt0Path ? 'yes' : 'no'})`);
       this._runModule(linker, 'link-gbz80', args);
 
       // Read IHX file

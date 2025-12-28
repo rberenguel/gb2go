@@ -78,7 +78,7 @@ function extractLibraries() {
   console.log('\nExtracting library files...');
 
   const libDir = path.join(GBDK_DIR, 'lib');
-  const libFiles = glob.sync('**/*.lib', { cwd: libDir });
+  const libFiles = glob.sync('**/*.{lib,o}', { cwd: libDir });
 
   const libraries = {};
   let totalSize = 0;

@@ -153,8 +153,8 @@ export class GameBoyEmulator {
       this.emulator = this.module._emulator_new_simple(
         this.romPtr,
         romSize,
-        0,  // audio_frequency (0 = disabled for now)
-        0   // audio_frames
+        44100,  // audio_frequency (must be non-zero to avoid div by zero)
+        4096    // audio_frames (buffer size)
       );
 
       if (!this.emulator) {
@@ -287,8 +287,8 @@ export class GameBoyEmulator {
 
     try {
       // Get frame buffer pointer from WASM
-      const frameBufferPtr = this.module._get_frame_buffer_ptr();
-      const frameBufferSize = this.module._get_frame_buffer_size();
+      const frameBufferPtr = this.module._get_frame_buffer_ptr(this.emulator);
+      const frameBufferSize = this.module._get_frame_buffer_size(this.emulator);
 
       if (!frameBufferPtr || frameBufferSize !== this.FRAME_BUFFER_SIZE) {
         console.warn('GameBoyEmulator: Invalid frame buffer');
