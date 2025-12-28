@@ -34,8 +34,10 @@
   --spacing-xl: 32px;
 
   /* Typography */
-  --font-family-code: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  --font-family-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-code:
+    'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  --font-family-ui:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   /* Sizes */
   --toolbar-height: 60px;
@@ -54,7 +56,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -102,7 +105,7 @@ html, body {
   background-color: #dcdcdc; /* DMG Case Color */
   padding: 40px 10px 60px 10px;
   border-radius: 10px 10px 40px 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .dpad-container {
@@ -159,7 +162,6 @@ html, body {
 .cm-activeLineGutter {
   background-color: #282828 !important;
 }
-
 
 /* ===== Main Layout ===== */
 #app {
@@ -402,8 +404,6 @@ html, body {
   color: var(--color-accent);
 }
 
-
-
 /* ===== Console ===== */
 #console-container {
   height: var(--console-height);
@@ -480,12 +480,8 @@ html, body {
   image-rendering: crisp-edges;
   /* Simulate DMG Screen */
   filter: sepia(100%) hue-rotate(50deg) saturate(300%) contrast(0.9);
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3);
 }
-
-
-
-
 
 .dpad-btn {
   position: absolute;
@@ -499,14 +495,14 @@ html, body {
   user-select: none;
   touch-action: none;
   transition: transform 0.1s ease;
-  box-shadow: 
-    inset 2px 2px 4px rgba(255,255,255,0.1),
-    1px 1px 2px rgba(0,0,0,0.5);
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .dpad-btn:active {
   background-color: #252525;
-  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .dpad-up {
@@ -515,7 +511,9 @@ html, body {
   border-radius: 4px 4px 0 0;
   background: linear-gradient(to bottom, #3a3a3a, #303030);
 }
-.dpad-up:active { transform: translateY(2px); }
+.dpad-up:active {
+  transform: translateY(2px);
+}
 
 .dpad-down {
   bottom: 0;
@@ -523,7 +521,9 @@ html, body {
   border-radius: 0 0 4px 4px;
   background: linear-gradient(to top, #3a3a3a, #303030);
 }
-.dpad-down:active { transform: translateY(-2px); }
+.dpad-down:active {
+  transform: translateY(-2px);
+}
 
 .dpad-left {
   left: 0;
@@ -531,7 +531,9 @@ html, body {
   border-radius: 4px 0 0 4px;
   background: linear-gradient(to right, #3a3a3a, #303030);
 }
-.dpad-left:active { transform: translateX(2px); }
+.dpad-left:active {
+  transform: translateX(2px);
+}
 
 .dpad-right {
   right: 0;
@@ -539,7 +541,9 @@ html, body {
   border-radius: 0 4px 4px 0;
   background: linear-gradient(to left, #3a3a3a, #303030);
 }
-.dpad-right:active { transform: translateX(-2px); }
+.dpad-right:active {
+  transform: translateX(-2px);
+}
 
 .dpad-center {
   position: absolute;
@@ -565,8 +569,6 @@ html, body {
   opacity: 0.5;
 }
 
-
-
 .action-btn {
   width: 44px;
   height: 44px;
@@ -583,18 +585,16 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 
-    1px 3px 5px rgba(0,0,0,0.3),
-    inset 2px 2px 5px rgba(255,255,255,0.1);
+  box-shadow:
+    1px 3px 5px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.1);
   transition: transform 0.1s;
 }
 
 .action-btn:active {
   transform: scale(0.95) translateY(2px);
-  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
-
-
 
 .small-btn {
   padding: 0;
@@ -604,7 +604,7 @@ html, body {
   border: none;
   border-radius: 10px;
   transform: rotate(-15deg);
-  box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   position: relative;
 }
@@ -654,7 +654,9 @@ html, body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-text {
@@ -697,19 +699,25 @@ html, body {
 /* ===== iPad Specific Optimizations ===== */
 @media (hover: none) and (pointer: coarse) {
   /* Increase touch target sizes */
-  .btn, .action-btn, .dpad-btn {
+  .btn,
+  .action-btn,
+  .dpad-btn {
     min-height: 44px;
   }
 
   /* Disable hover effects on touch devices */
-  .btn:hover, .file-tree-item:hover {
+  .btn:hover,
+  .file-tree-item:hover {
     background-color: initial;
   }
 }
 
 /* ===== Print Styles ===== */
 @media print {
-  #toolbar, #file-browser-panel, #emulator-panel, #console-container {
+  #toolbar,
+  #file-browser-panel,
+  #emulator-panel,
+  #console-container {
     display: none;
   }
 
@@ -717,7 +725,6 @@ html, body {
     width: 100%;
   }
 }
-
 
 /* ===== Modal (Generic) ===== */
 .modal {
@@ -732,7 +739,9 @@ html, body {
   align-items: center;
   z-index: 2000;
   backdrop-filter: blur(2px);
-  transition: opacity 0.2s ease, visibility 0.2s;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s;
   opacity: 1;
   visibility: visible;
 }
@@ -763,8 +772,14 @@ html, body {
 }
 
 @keyframes modalSlideIn {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .close-modal {

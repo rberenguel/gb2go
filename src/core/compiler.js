@@ -20,10 +20,10 @@ export class GBDKCompiler {
 
     // WASM modules
     this.modules = {
-      sdcpp: null,    // C preprocessor
-      sdcc: null,     // C compiler
+      sdcpp: null, // C preprocessor
+      sdcc: null, // C compiler
       assembler: null, // as-gbz80 assembler
-      linker: null    // link-gbz80 linker
+      linker: null, // link-gbz80 linker
     };
 
     // Compilation state
@@ -72,10 +72,10 @@ export class GBDKCompiler {
    */
   async _ensureModuleLoaded(moduleName) {
     const moduleMap = {
-      'sdcpp': './lib/wasm/sdcpp.js',
-      'sdcc': './lib/wasm/sdcc.js',
-      'assembler': './lib/wasm/as-gbz80.js',
-      'linker': './lib/wasm/link-gbz80.js'
+      sdcpp: './lib/wasm/sdcpp.js',
+      sdcc: './lib/wasm/sdcc.js',
+      assembler: './lib/wasm/as-gbz80.js',
+      linker: './lib/wasm/link-gbz80.js',
     };
 
     const jsPath = moduleMap[moduleName];
@@ -186,12 +186,7 @@ export class GBDKCompiler {
       }
 
       // Run sdcpp with -o flag for output
-      const args = [
-        '-I/include',
-        '-I/include/gb',
-        '-o', outputFile,
-        inputFile
-      ];
+      const args = ['-I/include', '-I/include/gb', '-o', outputFile, inputFile];
 
       console.log(`Running sdcpp with args:`, args);
       const result = this._runModule(sdcpp, 'sdcpp', args);
@@ -224,7 +219,7 @@ export class GBDKCompiler {
     this._log('Compiling to assembly...', 'info');
 
     const baseName = filename.replace(/\.c$/, '');
-    const inputFile = `/src/${baseName}.i`;  // Preprocessed file
+    const inputFile = `/src/${baseName}.i`; // Preprocessed file
     const outputFile = `/src/${baseName}.asm`;
 
     try {
@@ -243,8 +238,8 @@ export class GBDKCompiler {
       // This prevents sdcc from trying to invoke sdcpp as a subprocess
       const args = [
         '-mgbz80',
-        '--c1mode',  // Input is preprocessed code, output is assembly
-        `${baseName}.i`  // Relative path since we're in /src
+        '--c1mode', // Input is preprocessed code, output is assembly
+        `${baseName}.i`, // Relative path since we're in /src
       ];
 
       console.log(`Running sdcc with args:`, args);
@@ -272,7 +267,9 @@ export class GBDKCompiler {
 
       // Check if expected output file was created
       if (!this.vfs.fileExists('sdcc', outputFile)) {
-        throw new Error(`sdcc did not create expected output file ${outputFile}. Files in /src: ${srcFilesAfter.join(', ')}`);
+        throw new Error(
+          `sdcc did not create expected output file ${outputFile}. Files in /src: ${srcFilesAfter.join(', ')}`
+        );
       }
 
       // Read assembly output (sdcc creates it in the same dir as source)
@@ -306,11 +303,7 @@ export class GBDKCompiler {
       console.log(`Written ${inputFile} to assembler VFS`);
 
       // Run as-gbz80
-      const args = [
-        '-plosgff',
-        outputFile,
-        inputFile
-      ];
+      const args = ['-plosgff', outputFile, inputFile];
 
       console.log(`Running as-gbz80 with args:`, args);
       this._runModule(assembler, 'as-gbz80', args);
@@ -353,10 +346,10 @@ export class GBDKCompiler {
       // Manually expand libraries to object files
       // This is necessary because link-gbz80 in WASM env doesn't reliably handle
       // .lib files or -l flags with search paths.
-      
+
       const libPaths = [
         { dir: '/lib/small/asxxxx/gb', file: 'gb.lib' },
-        { dir: '/lib/small/asxxxx/gbz80', file: 'gbz80.lib' }
+        { dir: '/lib/small/asxxxx/gbz80', file: 'gbz80.lib' },
       ];
 
       const libraryObjects = [];
@@ -366,22 +359,23 @@ export class GBDKCompiler {
         try {
           // Read the .lib file (which is just a list of .o files)
           const libContent = this.vfs.readFile('linker', `${dir}/${file}`);
-          const objectFiles = libContent.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0);
+          const objectFiles = libContent
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
 
           console.log(`Expanded ${file} to ${objectFiles.length} object files`);
 
           // Add full path to each object file
           for (const objFile of objectFiles) {
-             const fullPath = `${dir}/${objFile}`;
-             
-             // Check if this is crt0.o (must be first)
-             if (objFile === 'crt0.o') {
-               crt0Path = fullPath;
-             } else {
-               libraryObjects.push(fullPath);
-             }
+            const fullPath = `${dir}/${objFile}`;
+
+            // Check if this is crt0.o (must be first)
+            if (objFile === 'crt0.o') {
+              crt0Path = fullPath;
+            } else {
+              libraryObjects.push(fullPath);
+            }
           }
         } catch (e) {
           console.warn(`Failed to expand library ${file}:`, e);
@@ -397,15 +391,15 @@ export class GBDKCompiler {
       // Try with -- for non-interactive command line input
       // Order: options, crt0.o, main.o, libraries
       const args = [
-        '--',            // Non-interactive command line input
-        '-i',            // Generate Intel HEX format (.ihx)
-        baseName        // Output base name (e.g., 'main')
+        '--', // Non-interactive command line input
+        '-i', // Generate Intel HEX format (.ihx)
+        baseName, // Output base name (e.g., 'main')
       ];
-      
+
       if (crt0Path) {
         args.push(crt0Path); // crt0.o MUST be first
       }
-      
+
       args.push(`${baseName}.o`); // Input object file
       args.push(...libraryObjects); // All other GBDK object files
 
@@ -446,11 +440,11 @@ export class GBDKCompiler {
    * @private
    */
   _parseIntelHex(ihxContent) {
-    const lines = ihxContent.split('\n').filter(line => line.startsWith(':'));
+    const lines = ihxContent.split('\n').filter((line) => line.startsWith(':'));
 
     // Create ROM buffer (32KB for a simple ROM)
     const rom = new Uint8Array(32768);
-    rom.fill(0xFF); // Fill with 0xFF (empty ROM pattern)
+    rom.fill(0xff); // Fill with 0xFF (empty ROM pattern)
 
     for (const line of lines) {
       if (line.length < 11) continue;
@@ -459,14 +453,16 @@ export class GBDKCompiler {
       const address = parseInt(line.substring(3, 7), 16);
       const recordType = parseInt(line.substring(7, 9), 16);
 
-      if (recordType === 0x00) { // Data record
+      if (recordType === 0x00) {
+        // Data record
         for (let i = 0; i < byteCount; i++) {
           const byte = parseInt(line.substring(9 + i * 2, 11 + i * 2), 16);
           if (address + i < rom.length) {
             rom[address + i] = byte;
           }
         }
-      } else if (recordType === 0x01) { // End of file
+      } else if (recordType === 0x01) {
+        // End of file
         break;
       }
     }
@@ -484,10 +480,10 @@ export class GBDKCompiler {
   _ensureGameBoyHeader(rom) {
     // Nintendo logo at 0x0104-0x0133 (48 bytes) - REQUIRED for boot
     const nintendoLogo = [
-      0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83,
-      0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
-      0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99, 0xBB, 0xBB, 0x67, 0x63,
-      0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
+      0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c, 0x00,
+      0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6, 0xdd, 0xdd,
+      0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb,
+      0xb9, 0x33, 0x3e,
     ];
 
     for (let i = 0; i < nintendoLogo.length; i++) {
@@ -510,31 +506,31 @@ export class GBDKCompiler {
     rom[0x0149] = 0x00;
 
     // Destination code at 0x014A (0x01 = Non-Japanese)
-    rom[0x014A] = 0x01;
+    rom[0x014a] = 0x01;
 
     // Old licensee code at 0x014B (0x33 = Check new licensee)
-    rom[0x014B] = 0x33;
+    rom[0x014b] = 0x33;
 
     // Mask ROM version at 0x014C
-    rom[0x014C] = 0x00;
+    rom[0x014c] = 0x00;
 
     // Header checksum at 0x014D
     // Checksum is calculated over 0x0134-0x014C
     let checksum = 0;
-    for (let i = 0x0134; i <= 0x014C; i++) {
+    for (let i = 0x0134; i <= 0x014c; i++) {
       checksum = checksum - rom[i] - 1;
     }
-    rom[0x014D] = checksum & 0xFF;
+    rom[0x014d] = checksum & 0xff;
 
     // Global checksum at 0x014E-0x014F (not checked by Game Boy, but calculate anyway)
     let globalChecksum = 0;
     for (let i = 0; i < rom.length; i++) {
-      if (i !== 0x014E && i !== 0x014F) {
-        globalChecksum = (globalChecksum + rom[i]) & 0xFFFF;
+      if (i !== 0x014e && i !== 0x014f) {
+        globalChecksum = (globalChecksum + rom[i]) & 0xffff;
       }
     }
-    rom[0x014E] = (globalChecksum >> 8) & 0xFF;
-    rom[0x014F] = globalChecksum & 0xFF;
+    rom[0x014e] = (globalChecksum >> 8) & 0xff;
+    rom[0x014f] = globalChecksum & 0xff;
 
     console.log('ROM header generated with checksums');
   }
@@ -556,23 +552,23 @@ export class GBDKCompiler {
 
       // Create a unique Module object for this WASM module
       const moduleConfig = {
-        locateFile: function(path) {
+        locateFile: function (path) {
           // If it's the .wasm file, return the correct path
           if (path.endsWith('.wasm')) {
             return basePath + path;
           }
           return path;
         },
-        print: function(text) {
+        print: function (text) {
           outputBuffer.push(text);
           console.log(`[${name}] ${text}`);
         },
-        printErr: function(text) {
+        printErr: function (text) {
           errorBuffer.push(text);
           console.warn(`[${name}] ${text}`);
         },
-        noInitialRun: true,  // CRITICAL: Don't auto-run main()
-        onRuntimeInitialized: null  // Will be set below
+        noInitialRun: true, // CRITICAL: Don't auto-run main()
+        onRuntimeInitialized: null, // Will be set below
       };
 
       // Set as global Module before loading script
@@ -580,7 +576,7 @@ export class GBDKCompiler {
 
       // Remove any existing script tags for this module to force reload
       const existingScripts = document.querySelectorAll(`script[data-module="${name}"]`);
-      existingScripts.forEach(s => s.remove());
+      existingScripts.forEach((s) => s.remove());
 
       const script = document.createElement('script');
       script.src = jsPath + '?t=' + Date.now(); // Cache busting
@@ -641,12 +637,18 @@ export class GBDKCompiler {
    */
   _runModule(module, name, args) {
     console.log(`GBDKCompiler: Running ${name} with args:`, args);
-    console.log(`Module ${name} properties:`, Object.keys(module).filter(k => typeof module[k] === 'function'));
+    console.log(
+      `Module ${name} properties:`,
+      Object.keys(module).filter((k) => typeof module[k] === 'function')
+    );
 
     try {
       // Check if callMain exists
       if (!module.callMain) {
-        console.error(`${name} available functions:`, Object.keys(module).filter(k => typeof module[k] === 'function'));
+        console.error(
+          `${name} available functions:`,
+          Object.keys(module).filter((k) => typeof module[k] === 'function')
+        );
         throw new Error(`${name} does not have callMain function`);
       }
 
@@ -693,7 +695,6 @@ export class GBDKCompiler {
         // Get exit code from module.exitStatus
         exitCode = module.exitStatus !== undefined ? module.exitStatus : 0;
         console.log(`${name} exit status:`, exitCode);
-
       } catch (e) {
         console.error(`${name}.callMain threw exception:`, e);
 
@@ -765,9 +766,9 @@ export class GBDKCompiler {
         sdcpp: this.modules.sdcpp !== null,
         sdcc: this.modules.sdcc !== null,
         assembler: this.modules.assembler !== null,
-        linker: this.modules.linker !== null
+        linker: this.modules.linker !== null,
       },
-      vfs: this.vfs.getDebugInfo()
+      vfs: this.vfs.getDebugInfo(),
     };
   }
 }

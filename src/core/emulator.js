@@ -59,7 +59,10 @@ export class GameBoyEmulator {
       this.module = Binjgb;
 
       console.log('GameBoyEmulator: Module loaded');
-      console.log('GameBoyEmulator: Available functions:', Object.keys(this.module).filter(k => k.startsWith('_')));
+      console.log(
+        'GameBoyEmulator: Available functions:',
+        Object.keys(this.module).filter((k) => k.startsWith('_'))
+      );
 
       console.log('GameBoyEmulator: Initialized successfully');
     } catch (error) {
@@ -153,8 +156,8 @@ export class GameBoyEmulator {
       this.emulator = this.module._emulator_new_simple(
         this.romPtr,
         romSize,
-        44100,  // audio_frequency (must be non-zero to avoid div by zero)
-        4096    // audio_frames (buffer size)
+        44100, // audio_frequency (must be non-zero to avoid div by zero)
+        4096 // audio_frames (buffer size)
       );
 
       if (!this.emulator) {
@@ -170,7 +173,6 @@ export class GameBoyEmulator {
 
       // Render the first frame
       this._renderFrame();
-
     } catch (error) {
       console.error('GameBoyEmulator: ROM loading failed:', error);
       if (this.onError) {
@@ -306,7 +308,6 @@ export class GameBoyEmulator {
 
       // Render to canvas
       this.ctx.putImageData(this.imageData, 0, 0);
-
     } catch (error) {
       console.error('GameBoyEmulator: Render error:', error);
     }
@@ -325,14 +326,14 @@ export class GameBoyEmulator {
 
     // Map button names to binjgb functions
     const buttonFunctions = {
-      'up': '_set_joyp_up',
-      'down': '_set_joyp_down',
-      'left': '_set_joyp_left',
-      'right': '_set_joyp_right',
-      'a': '_set_joyp_A',
-      'b': '_set_joyp_B',
-      'start': '_set_joyp_start',
-      'select': '_set_joyp_select'
+      up: '_set_joyp_up',
+      down: '_set_joyp_down',
+      left: '_set_joyp_left',
+      right: '_set_joyp_right',
+      a: '_set_joyp_A',
+      b: '_set_joyp_B',
+      start: '_set_joyp_start',
+      select: '_set_joyp_select',
     };
 
     const functionName = buttonFunctions[button];
@@ -385,7 +386,7 @@ export class GameBoyEmulator {
       isInitialized: this.module !== null,
       isRomLoaded: this.emulator !== null,
       isRunning: this.isRunning,
-      romSize: this.romData ? this.romData.length : 0
+      romSize: this.romData ? this.romData.length : 0,
     };
   }
 }

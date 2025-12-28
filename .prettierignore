@@ -1,0 +1,22 @@
+# Build artifacts
+build/
+dist/
+out/
+
+# Dependencies & Vendors
+node_modules/
+lib/
+
+# Generated or Binary files
+*.wasm
+*.min.js
+*.map
+
+# Editor/System
+.DS_Store
+.idea/
+.vscode/
+
+# Project Specific
+LICENSE
+THIRD_PARTY_LICENSES.md

@@ -5,9 +5,9 @@
  * CSS file created by Till Esser (@Wiwaltill) and automated by Pascal Jufer (@paescuj)
  */
 
-*[class^="iconoir-"]::before,
-*[class*=" iconoir-"]::before {
-  content: " ";
+*[class^='iconoir-']::before,
+*[class*=' iconoir-']::before {
+  content: ' ';
   display: block;
   background: currentColor;
   mask-size: cover;
@@ -15,8 +15,8 @@
   width: 1em;
   height: 1em;
 }
-*[class^="iconoir-"],
-*[class*=" iconoir-"] {
+*[class^='iconoir-'],
+*[class*=' iconoir-'] {
   display: inline-block;
 }
 .iconoir-accessibility-sign::before {

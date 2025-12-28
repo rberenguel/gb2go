@@ -16,7 +16,7 @@ const app = {
   editor: null,
   compiler: null,
   emulator: null,
-  storage: null
+  storage: null,
 };
 
 /**
@@ -69,7 +69,6 @@ async function init() {
 
     log('GB2GO ready! Compiler and emulator initialized.', 'success');
     log('Click "Compile" to build the Hello World program.', 'info');
-
   } catch (error) {
     console.error('Initialization error:', error);
     hideLoading();
@@ -158,7 +157,7 @@ function initUI() {
     toggleFilesBtn.addEventListener('click', () => {
       filePanel.classList.toggle('collapsed');
       const isCollapsed = filePanel.classList.contains('collapsed');
-      
+
       if (isCollapsed) {
         // fileBrowser.style.display = 'none'; // handled by CSS
         toggleFilesBtn.textContent = '▶';
@@ -197,7 +196,7 @@ function initUI() {
 function initTouchControls() {
   const buttons = document.querySelectorAll('[data-button]');
 
-  buttons.forEach(button => {
+  buttons.forEach((button) => {
     const buttonName = button.dataset.button;
 
     // Touch events
@@ -245,42 +244,50 @@ async function displaySource() {
   editorContainer.innerHTML = '';
 
   try {
-    const { 
-      EditorState, EditorView, 
-      keymap, defaultKeymap, 
-      history, historyKeymap, 
-      oneDark, languages,
-      Decoration, ViewPlugin
+    const {
+      EditorState,
+      EditorView,
+      keymap,
+      defaultKeymap,
+      history,
+      historyKeymap,
+      oneDark,
+      languages,
+      Decoration,
+      ViewPlugin,
     } = await import('CodeMirrorBundle');
-    
+
     // Active Line Plugin (Custom implementation since it's missing from bundle)
-    const activeLineHighlighter = ViewPlugin.fromClass(class {
-      constructor(view) {
-        this.decorations = this.getDeco(view);
-      }
-      update(update) {
-        if (update.docChanged || update.selectionSet)
-          this.decorations = this.getDeco(update.view);
-      }
-      getDeco(view) {
-        const { selection, doc } = view.state;
-        const decos = [];
-        const seenLines = new Set();
-        
-        for (const range of selection.ranges) {
+    const activeLineHighlighter = ViewPlugin.fromClass(
+      class {
+        constructor(view) {
+          this.decorations = this.getDeco(view);
+        }
+        update(update) {
+          if (update.docChanged || update.selectionSet)
+            this.decorations = this.getDeco(update.view);
+        }
+        getDeco(view) {
+          const { selection, doc } = view.state;
+          const decos = [];
+          const seenLines = new Set();
+
+          for (const range of selection.ranges) {
             const line = doc.lineAt(range.head);
             if (!seenLines.has(line.from)) {
-                seenLines.add(line.from);
-                decos.push(Decoration.line({ class: "cm-activeLine" }).range(line.from));
+              seenLines.add(line.from);
+              decos.push(Decoration.line({ class: 'cm-activeLine' }).range(line.from));
             }
+          }
+          // Decoration.set requires sorted decorations
+          decos.sort((a, b) => a.from - b.from);
+          return Decoration.set(decos);
         }
-        // Decoration.set requires sorted decorations
-        decos.sort((a, b) => a.from - b.from);
-        return Decoration.set(decos);
+      },
+      {
+        decorations: (v) => v.decorations,
       }
-    }, {
-      decorations: v => v.decorations
-    });
+    );
 
     // Build extensions
     const extensions = [
@@ -289,22 +296,30 @@ async function displaySource() {
       keymap.of([...defaultKeymap, ...historyKeymap]),
       activeLineHighlighter,
       EditorView.theme({
-        "&": { height: "100%", backgroundColor: "#1e1e1e !important" },
-        ".cm-scroller": { overflow: "auto", fontFamily: "'Monoid', 'SF Mono', monospace !important" },
-        ".cm-content": { backgroundColor: "#1e1e1e !important", fontFamily: "'Monoid', 'SF Mono', monospace !important" },
-        ".cm-gutters": { backgroundColor: "#1e1e1e !important", borderRight: "1px solid #2d2d30" }
+        '&': { height: '100%', backgroundColor: '#1e1e1e !important' },
+        '.cm-scroller': {
+          overflow: 'auto',
+          fontFamily: "'Monoid', 'SF Mono', monospace !important",
+        },
+        '.cm-content': {
+          backgroundColor: '#1e1e1e !important',
+          fontFamily: "'Monoid', 'SF Mono', monospace !important",
+        },
+        '.cm-gutters': { backgroundColor: '#1e1e1e !important', borderRight: '1px solid #2d2d30' },
       }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-           app.currentSource = update.state.doc.toString();
+          app.currentSource = update.state.doc.toString();
         }
-      })
+      }),
     ];
 
     // Try to load C/C++ syntax highlighting
     try {
       // Look for C or C++ in the languages list (standard CM6 language-data uses 'C++')
-      const cLang = languages.find(l => l.name === 'C++' || l.alias.includes('c') || l.alias.includes('cpp'));
+      const cLang = languages.find(
+        (l) => l.name === 'C++' || l.alias.includes('c') || l.alias.includes('cpp')
+      );
       if (cLang) {
         const cSupport = await cLang.load();
         extensions.push(cSupport);
@@ -320,16 +335,15 @@ async function displaySource() {
     // Create state and view
     const state = EditorState.create({
       doc: app.currentSource,
-      extensions: extensions
+      extensions: extensions,
     });
 
     app.editor = new EditorView({
       state,
-      parent: editorContainer
+      parent: editorContainer,
     });
 
     log('CodeMirror editor initialized.', 'info');
-
   } catch (err) {
     console.warn('Failed to load CodeMirror bundled modules:', err);
     // Fallback to Textarea
@@ -385,7 +399,7 @@ async function handleCompile() {
     // Compile the current source
     const romData = await app.compiler.compile({
       source: app.currentSource,
-      filename: app.currentFile
+      filename: app.currentFile,
     });
 
     // Store compiled ROM
@@ -395,16 +409,16 @@ async function handleCompile() {
 
     // Debug: Show ROM entry point
     const entryBytes = Array.from(romData.slice(0x100, 0x104))
-      .map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
+      .map((b) => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
       .join(' ');
     log(`Entry point (0x0100): ${entryBytes}`, 'info');
 
     // Verify header checksum
     let checksum = 0;
-    for (let i = 0x0134; i <= 0x014C; i++) {
+    for (let i = 0x0134; i <= 0x014c; i++) {
       checksum = checksum - romData[i] - 1;
     }
-    const isValid = (checksum & 0xFF) === romData[0x014D];
+    const isValid = (checksum & 0xff) === romData[0x014d];
     log(`Header checksum: ${isValid ? '✓ Valid' : '✗ Invalid'}`, isValid ? 'success' : 'error');
 
     log('ROM ready to run. Click "Run" to start the emulator.', 'info');
@@ -412,7 +426,6 @@ async function handleCompile() {
     // Enable run and download buttons
     if (runBtn) runBtn.disabled = false;
     if (downloadBtn) downloadBtn.disabled = false;
-
   } catch (error) {
     log(`✗ Compilation failed: ${error.message}`, 'error');
     console.error('Compilation error:', error);
@@ -554,29 +567,28 @@ function handleFileInputChange(e) {
   }
 }
 
-
 function handleAbout() {
   const modal = document.getElementById('about-modal');
   const closeBtn = document.getElementById('close-about');
   const versionEl = document.getElementById('about-version');
   const copyrightYearEl = document.getElementById('copyright-year');
-  
+
   if (!modal) return;
-  
+
   // Show modal
   modal.classList.remove('hidden');
-  
+
   // Set copyright year
   if (copyrightYearEl) copyrightYearEl.textContent = new Date().getFullYear();
-  
+
   // Fetch version from manifest if not already set
   if (versionEl && versionEl.textContent === 'Version ...') {
     fetch('manifest.json')
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         versionEl.textContent = `Version ${data.version || '1.0.0'}`;
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to fetch manifest:', err);
         versionEl.textContent = 'Version 1.0.0';
       });
@@ -584,9 +596,9 @@ function handleAbout() {
 
   // Close logic
   const closeModal = () => modal.classList.add('hidden');
-  
+
   if (closeBtn) closeBtn.onclick = closeModal;
-  
+
   // Close on click outside
   window.onclick = (event) => {
     if (event.target === modal) {

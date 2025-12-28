@@ -1,187 +1,190 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#1e1e1e">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#1e1e1e" />
 
-  <title>GB2GO - Game Boy Development IDE</title>
-  <meta name="description" content="Browser-based Game Boy development environment with GBDK compiler and emulator">
+    <title>GB2GO - Game Boy Development IDE</title>
+    <meta
+      name="description"
+      content="Browser-based Game Boy development environment with GBDK compiler and emulator"
+    />
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="./manifest.json">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json" />
 
-  <!-- Icons -->
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png">
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png" />
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="./src/styles.css">
-  <link rel="stylesheet" href="./fonts/monoid.css">
-  <link rel="stylesheet" href="./fonts/iconoir/iconoir.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="./src/styles.css" />
+    <link rel="stylesheet" href="./fonts/monoid.css" />
+    <link rel="stylesheet" href="./fonts/iconoir/iconoir.css" />
 
-  <!-- Import Map for CodeMirror -->
-  <script type="importmap">
-    {
-      "imports": {
-        "CodeMirrorBundle": "./lib/codemirror/codemirror-bundle.js"
+    <!-- Import Map for CodeMirror -->
+    <script type="importmap">
+      {
+        "imports": {
+          "CodeMirrorBundle": "./lib/codemirror/codemirror-bundle.js"
+        }
       }
-    }
-  </script>
-</head>
-<body>
-  <!-- Main Application Container -->
-  <div id="app">
+    </script>
+  </head>
+  <body>
+    <!-- Main Application Container -->
+    <div id="app">
+      <!-- Toolbar -->
+      <div id="toolbar">
+        <div class="toolbar-section">
+          <h1 class="app-title"><img src="./icons/icon-192.png" alt="G" class="app-logo" />B2GO</h1>
+          <span class="app-subtitle">Game Boy development IDE in the browser</span>
+        </div>
 
-    <!-- Toolbar -->
-    <div id="toolbar">
-      <div class="toolbar-section">
-        <h1 class="app-title">
-          <img src="./icons/icon-192.png" alt="G" class="app-logo">B2GO
-        </h1>
-        <span class="app-subtitle">Game Boy development IDE in the browser</span>
-      </div>
+        <div class="toolbar-section toolbar-actions">
+          <button id="btn-compile" class="btn btn-primary" title="Compile project (Ctrl+B)">
+            <i class="iconoir-hammer"></i>
+          </button>
+          <button id="btn-run" class="btn btn-success" title="Run in emulator" disabled>
+            <i class="iconoir-play"></i>
+          </button>
+          <button id="btn-pause" class="btn" title="Pause emulator" disabled hidden>
+            <i class="iconoir-pause"></i>
+          </button>
+          <button id="btn-reset" class="btn" title="Reset emulator" disabled>
+            <i class="iconoir-restart"></i>
+          </button>
+          <button id="btn-download" class="btn" title="Download ROM (.gb)" disabled>
+            <i class="iconoir-download"></i>
+          </button>
+        </div>
 
-      <div class="toolbar-section toolbar-actions">
-        <button id="btn-compile" class="btn btn-primary" title="Compile project (Ctrl+B)">
-          <i class="iconoir-hammer"></i>
-        </button>
-        <button id="btn-run" class="btn btn-success" title="Run in emulator" disabled>
-          <i class="iconoir-play"></i>
-        </button>
-        <button id="btn-pause" class="btn" title="Pause emulator" disabled hidden>
-          <i class="iconoir-pause"></i>
-        </button>
-        <button id="btn-reset" class="btn" title="Reset emulator" disabled>
-          <i class="iconoir-restart"></i>
-        </button>
-        <button id="btn-download" class="btn" title="Download ROM (.gb)" disabled>
-          <i class="iconoir-download"></i>
-        </button>
-      </div>
-
-      <div class="toolbar-section toolbar-actions">
-        <button id="btn-export" class="btn" title="Export project as ZIP">
-          <i class="iconoir-floppy-disk"></i>
-        </button>
-        <button id="btn-import" class="btn" title="Import project from ZIP">
-          <i class="iconoir-import"></i>
-        </button>
-        <button id="btn-about" class="btn" title="About GB2GO">
+        <div class="toolbar-section toolbar-actions">
+          <button id="btn-export" class="btn" title="Export project as ZIP">
+            <i class="iconoir-floppy-disk"></i>
+          </button>
+          <button id="btn-import" class="btn" title="Import project from ZIP">
+            <i class="iconoir-import"></i>
+          </button>
+          <button id="btn-about" class="btn" title="About GB2GO">
             <i class="iconoir-help-circle"></i>
-        </button>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div id="main-content">
+        <!-- Left Panel: File Browser -->
+        <div id="file-browser-panel" class="panel">
+          <div class="panel-header">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <button id="toggle-files" class="btn-icon-small" title="Collapse">◀</button>
+              <h2>Files</h2>
+            </div>
+            <button id="btn-new-file" class="btn-icon-small" title="New file">+</button>
+          </div>
+          <div id="file-browser" class="panel-content">
+            <!-- File tree will be rendered here -->
+          </div>
+        </div>
+
+        <!-- Middle Panel: Code Editor -->
+        <div id="editor-panel" class="panel panel-main">
+          <div class="panel-header">
+            <h2 id="current-file-name">main.c</h2>
+          </div>
+          <div id="editor-container" class="panel-content">
+            <!-- CodeMirror editor will be mounted here -->
+          </div>
+          <div id="console-container" class="console">
+            <div class="console-header">
+              <h3>Console</h3>
+              <button id="btn-clear-console" class="btn-icon-small" title="Clear console">×</button>
+            </div>
+            <div id="console-output" class="console-output">
+              <div class="console-line console-info">
+                GB2GO ready. Click "Compile" to build your project.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Emulator -->
+        <div id="emulator-panel" class="panel">
+          <div class="panel-header">
+            <h2>Emulator</h2>
+            <button id="toggle-emulator" class="btn-icon-small" title="Collapse">▶</button>
+          </div>
+          <div id="emulator-container" class="panel-content">
+            <canvas id="emulator-canvas" width="160" height="144"></canvas>
+
+            <!-- Touch Controls for iPad -->
+            <div id="touch-controls">
+              <div class="dpad-container">
+                <button class="dpad-btn dpad-up" data-button="up">▲</button>
+                <button class="dpad-btn dpad-down" data-button="down">▼</button>
+                <button class="dpad-btn dpad-left" data-button="left">◀</button>
+                <button class="dpad-btn dpad-right" data-button="right">▶</button>
+                <div class="dpad-center"></div>
+              </div>
+
+              <div class="action-buttons">
+                <button class="action-btn btn-b" data-button="b">B</button>
+                <button class="action-btn btn-a" data-button="a">A</button>
+              </div>
+
+              <div class="start-select-buttons">
+                <button class="small-btn" data-button="select"><span>Select</span></button>
+                <button class="small-btn" data-button="start"><span>Start</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div id="main-content">
-
-      <!-- Left Panel: File Browser -->
-      <div id="file-browser-panel" class="panel">
-        <div class="panel-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button id="toggle-files" class="btn-icon-small" title="Collapse">◀</button>
-            <h2>Files</h2>
-          </div>
-          <button id="btn-new-file" class="btn-icon-small" title="New file">+</button>
-        </div>
-        <div id="file-browser" class="panel-content">
-          <!-- File tree will be rendered here -->
-        </div>
-      </div>
-
-      <!-- Middle Panel: Code Editor -->
-      <div id="editor-panel" class="panel panel-main">
-        <div class="panel-header">
-          <h2 id="current-file-name">main.c</h2>
-        </div>
-        <div id="editor-container" class="panel-content">
-          <!-- CodeMirror editor will be mounted here -->
-        </div>
-        <div id="console-container" class="console">
-          <div class="console-header">
-            <h3>Console</h3>
-            <button id="btn-clear-console" class="btn-icon-small" title="Clear console">×</button>
-          </div>
-          <div id="console-output" class="console-output">
-            <div class="console-line console-info">GB2GO ready. Click "Compile" to build your project.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Panel: Emulator -->
-      <div id="emulator-panel" class="panel">
-        <div class="panel-header">
-          <h2>Emulator</h2>
-          <button id="toggle-emulator" class="btn-icon-small" title="Collapse">▶</button>
-        </div>
-        <div id="emulator-container" class="panel-content">
-          <canvas id="emulator-canvas" width="160" height="144"></canvas>
-
-          <!-- Touch Controls for iPad -->
-          <div id="touch-controls">
-            <div class="dpad-container">
-              <button class="dpad-btn dpad-up" data-button="up">▲</button>
-              <button class="dpad-btn dpad-down" data-button="down">▼</button>
-              <button class="dpad-btn dpad-left" data-button="left">◀</button>
-              <button class="dpad-btn dpad-right" data-button="right">▶</button>
-              <div class="dpad-center"></div>
-            </div>
-
-            <div class="action-buttons">
-              <button class="action-btn btn-b" data-button="b">B</button>
-              <button class="action-btn btn-a" data-button="a">A</button>
-            </div>
-
-            <div class="start-select-buttons">
-              <button class="small-btn" data-button="select"><span>Select</span></button>
-              <button class="small-btn" data-button="start"><span>Start</span></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <!-- Loading Indicator -->
+    <div id="loading-overlay" class="loading-overlay" hidden>
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading...</div>
     </div>
-  </div>
 
-  <!-- Loading Indicator -->
-  <div id="loading-overlay" class="loading-overlay" hidden>
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Loading...</div>
-  </div>
+    <!-- File input for importing -->
+    <input type="file" id="file-input" accept=".zip" hidden />
 
-  <!-- File input for importing -->
-  <input type="file" id="file-input" accept=".zip" hidden>
-
-  <!-- About Modal -->
-  <div id="about-modal" class="modal hidden">
-    <div class="modal-content about-dialog">
+    <!-- About Modal -->
+    <div id="about-modal" class="modal hidden">
+      <div class="modal-content about-dialog">
         <button id="close-about" class="close-modal">&times;</button>
         <h2 id="about-title">GB2GO</h2>
         <p id="about-version" class="about-meta">Version ...</p>
         <p class="about-copyright">&copy; <span id="copyright-year">...</span> Ruben Berenguel</p>
         <p class="about-credits">Created with help from Claude and Gemini.</p>
-        
-        <div class="about-links">
-            <p><strong>Open Source Components:</strong></p>
-            <ul>
-                <li>GBDK-2020 / SDCC</li>
-                <li>Binjgb Emulator</li>
-                <li>CodeMirror 6</li>
-            </ul>
-        </div>
-        
-        <div class="about-footer">
-            <a href="https://github.com/rberenguel/gb2go" target="_blank" class="github-link">
-                <i class="iconoir-github-circle"></i> View on GitHub
-            </a>
-        </div>
-    </div>
-  </div>
 
-  <!-- App Logic -->
-  <script type="module" src="./src/main.js"></script>
-</body>
+        <div class="about-links">
+          <p><strong>Open Source Components:</strong></p>
+          <ul>
+            <li>GBDK-2020 / SDCC</li>
+            <li>Binjgb Emulator</li>
+            <li>CodeMirror 6</li>
+          </ul>
+        </div>
+
+        <div class="about-footer">
+          <a href="https://github.com/rberenguel/gb2go" target="_blank" class="github-link">
+            <i class="iconoir-github-circle"></i> View on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Logic -->
+    <script type="module" src="./src/main.js"></script>
+  </body>
 </html>

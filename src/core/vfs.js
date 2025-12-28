@@ -194,7 +194,7 @@ export class VirtualFS {
   mkdirp(moduleName, path) {
     const Module = this._getModule(moduleName);
 
-    const parts = path.split('/').filter(p => p.length > 0);
+    const parts = path.split('/').filter((p) => p.length > 0);
     let currentPath = '';
 
     for (const part of parts) {
@@ -221,7 +221,7 @@ export class VirtualFS {
     const Module = this._getModule(moduleName);
 
     try {
-      return Module.FS.readdir(path).filter(name => name !== '.' && name !== '..');
+      return Module.FS.readdir(path).filter((name) => name !== '.' && name !== '..');
     } catch (e) {
       console.error(`VirtualFS: Failed to list ${path} in ${moduleName}:`, e);
       return [];
@@ -289,7 +289,9 @@ export class VirtualFS {
   copyFile(sourceModule, sourcePath, destModule, destPath) {
     const content = this.readFile(sourceModule, sourcePath, true);
     this.writeFile(destModule, destPath, content);
-    console.log(`VirtualFS: Copied ${sourcePath} from ${sourceModule} to ${destPath} in ${destModule}`);
+    console.log(
+      `VirtualFS: Copied ${sourcePath} from ${sourceModule} to ${destPath} in ${destModule}`
+    );
   }
 
   /**
@@ -300,7 +302,9 @@ export class VirtualFS {
     const Module = this.modules.get(moduleName);
 
     if (!Module) {
-      throw new Error(`VirtualFS: Module "${moduleName}" not initialized. Available modules: ${Array.from(this.modules.keys()).join(', ')}`);
+      throw new Error(
+        `VirtualFS: Module "${moduleName}" not initialized. Available modules: ${Array.from(this.modules.keys()).join(', ')}`
+      );
     }
 
     return Module;
@@ -311,7 +315,7 @@ export class VirtualFS {
    * @private
    */
   _ensureDirectoryExists(Module, filePath) {
-    const parts = filePath.split('/').filter(p => p.length > 0);
+    const parts = filePath.split('/').filter((p) => p.length > 0);
 
     // Remove filename (last part)
     parts.pop();

@@ -1,15 +1,18 @@
 # GB2GO: Browser-Based GBDK C Compiler - Implementation Plan
 
 ## Overview
+
 Build a browser-only Game Boy development IDE optimized for iPad, using pre-compiled WASM modules from gbdk-emscripten, existing CodeMirror bundle, and binjgb for emulation.
 
 ## Architecture
 
 **Separation of Concerns**:
+
 - **Root directory**: Clean PWA - only static HTML/JS/CSS/WASM files
 - **Build tools**: Separate `build/` folder with Node.js scripts to extract WASM/resources
 
 **Key Components**:
+
 - **Compiler Pipeline**: lcc (SDCC) → sdasgb (assembler) → sdldgb (linker) → makebin (HEX→ROM)
 - **Editor**: CodeMirror 6 (user's existing bundle)
 - **Emulator**: binjgb WASM
@@ -226,17 +229,18 @@ gb2go/
 
 ## Critical Challenges & Solutions
 
-| Challenge | Solution |
-|-----------|----------|
-| gbdk-emscripten uses Node.js child_process | Extract WASM + rewrite glue code for browser |
-| GBDK headers/libs accessibility | Bundle as JSON, preload into virtual FS |
-| Compilation performance | Debounce (500ms), show progressive feedback |
-| iPad storage limits | IndexedDB + persistent storage API + ZIP backups |
-| Touch controls | CSS virtual D-pad with haptic feedback |
+| Challenge                                  | Solution                                         |
+| ------------------------------------------ | ------------------------------------------------ |
+| gbdk-emscripten uses Node.js child_process | Extract WASM + rewrite glue code for browser     |
+| GBDK headers/libs accessibility            | Bundle as JSON, preload into virtual FS          |
+| Compilation performance                    | Debounce (500ms), show progressive feedback      |
+| iPad storage limits                        | IndexedDB + persistent storage API + ZIP backups |
+| Touch controls                             | CSS virtual D-pad with haptic feedback           |
 
 ## Default Template
 
 **hello-world/main.c**:
+
 ```c
 #include <gb/gb.h>
 #include <stdio.h>
@@ -258,6 +262,7 @@ void main(void) {
 **Location**: `lib/codemirror/codemirror-bundle.js` (copied from `../yacme/bundles/`)
 
 **Setup in index.html**:
+
 ```html
 <script type="importmap">
   {
@@ -269,6 +274,7 @@ void main(void) {
 ```
 
 **Usage in JavaScript modules**:
+
 ```javascript
 import {
   EditorState,
@@ -284,7 +290,7 @@ import {
   // For decorations/plugins:
   Decoration,
   ViewPlugin,
-} from "CodeMirrorBundle";
+} from 'CodeMirrorBundle';
 
 // Create editor
 const editorView = new EditorView({
@@ -308,6 +314,7 @@ const editorView = new EditorView({
 ```
 
 **Available exports** (verified from YACME usage):
+
 - EditorState, EditorView
 - keymap, defaultKeymap, history, historyKeymap
 - markdown, languages, markdownLanguage, GFM

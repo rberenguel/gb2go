@@ -65,6 +65,6 @@ void main(void) {
         delay(10);
     }
 }
-`
-  }
+`,
+  },
 };
