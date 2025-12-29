@@ -208,7 +208,11 @@ gb2go/
 
 ### Phase 6: UI Components
 
-- [x] Create `src/templates/hello-world.js` with Example template (graphics demo)
+- [x] Create `src/templates/hello-world.js` with multiple templates:
+  - [x] Example template (graphics demo with shapes)
+  - [x] Minimal template (basic starter)
+  - [x] Sprite template (inline sprite data demo)
+  - [x] Flappy Duck template (complete game with PNG sprites, demonstrates PNG→C workflow)
 - [x] Create `src/main.js`
   - [x] Initialize storage, compiler, emulator
   - [x] Setup editor with auto-save (1s debounce)
@@ -289,7 +293,7 @@ gb2go/
 **Editor Enhancements:**
 
 - [ ] Keyboard shortcuts (Ctrl+B compile, Ctrl+S save, etc.)
-- [ ] Find/replace in file
+- [x] Find/replace in file (Cmd+F opens CodeMirror search panel)
 - [ ] Find in project (search all files)
 - [ ] Go to definition (LSP-like features)
 - [ ] Code snippets
@@ -596,11 +600,11 @@ sprites/player.meta.json     # Optional metadata (animation timing, collision bo
 
 Extend storage to handle binary PNG files.
 
-- [ ] `storage.js` updates:
-  - [ ] Store PNG as base64 in IndexedDB
-  - [ ] `saveFile()` detects binary vs text by extension
-  - [ ] `loadFile()` returns appropriate type
-- [ ] File browser shows PNG thumbnails
+- [x] `storage.js` updates:
+  - [x] Store PNG as base64 in IndexedDB
+  - [x] `saveFile()` detects binary vs text by extension
+  - [x] `loadFile()` returns appropriate type
+- [x] File browser shows PNG thumbnails
 - [ ] Double-click PNG opens in sprite editor
 - [ ] Drag-and-drop PNG import to project
 
@@ -891,22 +895,22 @@ node extract-zgb.js  # Downloads and extracts ZGB to lib/libraries/zgb/
 
 ### Core Converter
 
-- [ ] `src/core/sprite-converter.js`
-  - [ ] PNG decoding (canvas-based)
-  - [ ] RGB to palette index mapping
-  - [ ] 2bpp tile encoding (8x8 → 16 bytes)
-  - [ ] Metasprite generation for larger sprites
-  - [ ] C code generation with proper formatting
+- [x] `src/core/sprite-converter.js`
+  - [x] PNG decoding (canvas-based)
+  - [x] RGB to palette index mapping
+  - [x] 2bpp tile encoding (8x8 → 16 bytes)
+  - [x] C code generation with proper formatting
+  - [ ] Metasprite generation for larger sprites (16x16+)
   - [ ] Tile deduplication with flip detection
   - [ ] Palette auto-detection
   - [ ] PNG export (for sprite editor saves)
 
 ### Storage Updates
 
-- [ ] `src/core/storage.js` modifications
-  - [ ] Binary file support (base64 encoding)
-  - [ ] File type detection by extension
-  - [ ] PNG thumbnail generation for file browser
+- [x] `src/core/storage.js` modifications
+  - [x] Binary file support (base64 encoding)
+  - [x] File type detection by extension
+  - [x] PNG thumbnail generation for file browser
 
 ### Sprite Editor
 
@@ -940,19 +944,22 @@ node extract-zgb.js  # Downloads and extracts ZGB to lib/libraries/zgb/
 
 ### Build Pipeline Updates
 
-- [ ] `src/core/compiler.js` modifications
-  - [ ] Scan for PNG assets in project
-  - [ ] Convert PNGs to C before compilation
-  - [ ] Include generated C in compilation
+- [x] `src/core/compiler.js` modifications
+  - [x] Scan for PNG assets in project
+  - [x] Convert PNGs to C before compilation (sprite-converter.js)
+  - [x] Include generated C in compilation
   - [ ] Library source inclusion
   - [ ] Project config integration
 
 ### UI Updates
 
-- [ ] File browser PNG support (thumbnails, double-click to edit)
+- [x] File browser PNG support (thumbnails shown)
+- [ ] Double-click PNG to edit in sprite editor
 - [ ] Sprite editor modal/panel
 - [ ] Project settings modal
 - [ ] Library manager UI
+- [x] Resizable panels (Split.js) - file browser and editor resizable, emulator fixed
+- [x] CodeMirror search integration (Cmd+F)
 
 ---
 
