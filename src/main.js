@@ -6,6 +6,7 @@
 import { GBDKCompiler } from './core/compiler.js';
 import { GameBoyEmulator } from './core/emulator.js';
 import { StorageManager } from './core/storage.js';
+import { SpriteEditor } from './ui/sprite-editor.js';
 import { exampleTemplate, minimalTemplate } from './templates/hello-world.js';
 
 // Application state
@@ -209,6 +210,11 @@ function initUI() {
 
   // New file button
   document.getElementById('btn-new-file')?.addEventListener('click', handleNewFile);
+
+  // New sprite button
+  document
+    .getElementById('btn-new-sprite')
+    ?.addEventListener('click', () => openSpriteEditor(null));
 
   // Clear console button
   const btnClearConsole = document.getElementById('btn-clear-console');
@@ -798,18 +804,28 @@ function updateFileBrowser() {
 
     // Determine icon based on file extension
     const ext = path.split('.').pop().toLowerCase();
-    let icon = '📄';
-    if (ext === 'c') icon = '📄';
-    else if (ext === 'h') icon = '📋';
-    else if (ext === 'asm' || ext === 's') icon = '⚙️';
-    else if (ext === 'txt' || ext === 'md') icon = '📝';
+    let iconClass = 'iconoir-page';
+    if (ext === 'c') iconClass = 'iconoir-code';
+    else if (ext === 'h') iconClass = 'iconoir-code-brackets';
+    else if (ext === 'asm' || ext === 's') iconClass = 'iconoir-settings';
+    else if (ext === 'txt' || ext === 'md') iconClass = 'iconoir-page';
+    else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif')
+      iconClass = 'iconoir-media-image';
+    else if (ext === 'json') iconClass = 'iconoir-code-brackets';
+
+    const isImage = app.storage.isImageFile(path);
+
+    // Show just filename, use tooltip for full path
+    const fileName = path.includes('/') ? path.split('/').pop() : path;
+    const isInFolder = path.includes('/');
 
     item.innerHTML = `
-      <span style="margin-right: 5px;">${icon}</span>
-      <span class="file-name">${path}</span>
+      <i class="${iconClass}" style="margin-right: 6px; font-size: 14px;"></i>
+      <span class="file-name" title="${path}">${isInFolder ? '↳ ' : ''}${fileName}</span>
       <span class="file-actions" style="margin-left: auto; opacity: 0; transition: opacity 0.2s;">
-        <button class="btn-icon-small btn-rename" title="Rename" style="padding: 2px 4px;">✎</button>
-        <button class="btn-icon-small btn-file-delete" title="Delete" style="padding: 2px 4px;">×</button>
+        ${isImage ? '<button class="btn-icon-small btn-edit-sprite" title="Edit Sprite" style="padding: 2px 4px;"><i class="iconoir-edit-pencil" style="font-size: 12px;"></i></button>' : ''}
+        <button class="btn-icon-small btn-rename" title="Rename" style="padding: 2px 4px;"><i class="iconoir-edit" style="font-size: 12px;"></i></button>
+        <button class="btn-icon-small btn-file-delete" title="Delete" style="padding: 2px 4px;"><i class="iconoir-xmark" style="font-size: 12px;"></i></button>
       </span>
     `;
 
@@ -824,12 +840,27 @@ function updateFileBrowser() {
       if (actions) actions.style.opacity = '0';
     });
 
-    // Click to open file
+    // Click to open file (or sprite editor for images)
     item.addEventListener('click', (e) => {
       // Don't switch if clicking action buttons
       if (e.target.closest('.file-actions')) return;
-      switchToFile(path);
+
+      if (isImage) {
+        // Open sprite editor for images
+        openSpriteEditor(path);
+      } else {
+        switchToFile(path);
+      }
     });
+
+    // Edit sprite button
+    const editSpriteBtn = item.querySelector('.btn-edit-sprite');
+    if (editSpriteBtn) {
+      editSpriteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        openSpriteEditor(path);
+      });
+    }
 
     // Rename button
     const renameBtn = item.querySelector('.btn-rename');
@@ -858,38 +889,37 @@ function updateFileBrowser() {
  */
 async function handleFileDelete(path) {
   showConfirmModal(`Delete "${path}"? This cannot be undone!`, async () => {
+    try {
+      // Delete from storage
+      await app.storage.deleteFile(app.currentProject.id, path);
 
-  try {
-    // Delete from storage
-    await app.storage.deleteFile(app.currentProject.id, path);
+      // Delete from in-memory project
+      delete app.currentProject.files[path];
 
-    // Delete from in-memory project
-    delete app.currentProject.files[path];
+      log(`Deleted file: ${path}`, 'success');
 
-    log(`Deleted file: ${path}`, 'success');
-
-    // If we deleted the current file, switch to another one
-    if (path === app.currentFile) {
-      const remainingFiles = Object.keys(app.currentProject.files);
-      if (remainingFiles.length > 0) {
-        await switchToFile(remainingFiles[0]);
-      } else {
-        app.currentFile = '';
-        app.currentSource = '';
-        if (app.editor) {
-          app.editor.dispatch({
-            changes: { from: 0, to: app.editor.state.doc.length, insert: '' },
-          });
+      // If we deleted the current file, switch to another one
+      if (path === app.currentFile) {
+        const remainingFiles = Object.keys(app.currentProject.files);
+        if (remainingFiles.length > 0) {
+          await switchToFile(remainingFiles[0]);
+        } else {
+          app.currentFile = '';
+          app.currentSource = '';
+          if (app.editor) {
+            app.editor.dispatch({
+              changes: { from: 0, to: app.editor.state.doc.length, insert: '' },
+            });
+          }
         }
       }
-    }
 
-    // Update file browser
-    updateFileBrowser();
-  } catch (error) {
-    log(`Failed to delete file: ${error.message}`, 'error');
-    console.error('File deletion error:', error);
-  }
+      // Update file browser
+      updateFileBrowser();
+    } catch (error) {
+      log(`Failed to delete file: ${error.message}`, 'error');
+      console.error('File deletion error:', error);
+    }
   });
 }
 
@@ -991,6 +1021,41 @@ async function switchToFile(path) {
   }
 
   log(`Switched to ${path}`, 'info');
+}
+
+/**
+ * Open the sprite editor for a file
+ * @param {string} filePath - Path to the sprite file (or null for new sprite)
+ */
+async function openSpriteEditor(filePath = null) {
+  if (!app.currentProject) {
+    log('No project loaded', 'error');
+    return;
+  }
+
+  try {
+    await SpriteEditor.open({
+      storage: app.storage,
+      projectId: app.currentProject.id,
+      filePath: filePath,
+      width: 16,
+      height: 16,
+      onSave: async (savedPath, blob) => {
+        // Update in-memory project files
+        const dataURL = await app.storage.blobToDataURL(blob);
+        app.currentProject.files[savedPath] = dataURL;
+
+        log(`Sprite saved: ${savedPath}`, 'success');
+        updateFileBrowser();
+      },
+      onClose: () => {
+        log('Sprite editor closed', 'info');
+      },
+    });
+  } catch (error) {
+    log(`Failed to open sprite editor: ${error.message}`, 'error');
+    console.error('Sprite editor error:', error);
+  }
 }
 
 /**
@@ -1346,6 +1411,23 @@ function showNewFileDialog() {
       return;
     }
 
+    // Handle sprite template specially
+    if (template === 'sprite') {
+      closeModal();
+      // Ensure filename has .png extension
+      let spritePath = filename;
+      if (!spritePath.toLowerCase().endsWith('.png')) {
+        spritePath = spritePath.replace(/\.[^.]*$/, '') + '.png';
+      }
+      // Add sprites/ prefix if not present
+      if (!spritePath.startsWith('sprites/')) {
+        spritePath = 'sprites/' + spritePath;
+      }
+      // Open sprite editor for new sprite
+      openSpriteEditor(null);
+      return;
+    }
+
     // Get template content
     let content = '';
     if (template === 'c-source') {
@@ -1353,6 +1435,8 @@ function showNewFileDialog() {
     } else if (template === 'c-header') {
       const guard = filename.toUpperCase().replace(/[^A-Z0-9]/g, '_');
       content = `#ifndef ${guard}\n#define ${guard}\n\n// TODO: Add declarations\n\n#endif // ${guard}\n`;
+    } else if (template === 'json') {
+      content = '{\n  \n}\n';
     }
 
     try {
@@ -1485,7 +1569,8 @@ async function handleProjectSwitcher() {
     const projects = await app.storage.listProjects();
 
     if (projects.length === 0) {
-      projectList.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">No projects yet. Create one to get started!</div>';
+      projectList.innerHTML =
+        '<div style="padding: 20px; text-align: center; color: #888;">No projects yet. Create one to get started!</div>';
       return;
     }
 
@@ -1562,7 +1647,8 @@ async function handleProjectSwitcher() {
     }
   } catch (error) {
     log(`Failed to load projects: ${error.message}`, 'error');
-    projectList.innerHTML = '<div style="padding: 20px; color: #f48771;">Error loading projects</div>';
+    projectList.innerHTML =
+      '<div style="padding: 20px; color: #f48771;">Error loading projects</div>';
   }
 }
 

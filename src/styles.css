@@ -400,11 +400,16 @@ body {
 
 .file-tree-item .file-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-tree-item .file-actions {
   display: flex;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .file-tree-item:hover {

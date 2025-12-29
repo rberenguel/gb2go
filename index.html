@@ -46,7 +46,7 @@
           <h1 class="app-title"><img src="./icons/icon-192.png" alt="G" class="app-logo" />B2GO</h1>
           <button id="btn-project-switcher" class="project-name-btn" title="Switch project">
             <span id="current-project-name">Loading...</span>
-            <span style="margin-left: 4px;">▼</span>
+            <span style="margin-left: 4px">▼</span>
           </button>
         </div>
 
@@ -68,6 +68,9 @@
           </button>
           <button id="btn-api-info" class="btn" title="API Documentation">
             <i class="iconoir-info-circle"></i>
+          </button>
+          <button id="btn-new-sprite" class="btn" title="New Sprite">
+            <i class="iconoir-media-image-plus"></i>
           </button>
         </div>
 
@@ -216,6 +219,8 @@
                 <option value="empty">Empty File</option>
                 <option value="c-source">C Source File</option>
                 <option value="c-header">C Header File</option>
+                <option value="sprite">Sprite (PNG)</option>
+                <option value="json">JSON File</option>
               </select>
             </div>
             <div class="form-actions">
@@ -274,7 +279,7 @@
           <div id="project-list" class="project-list">
             <!-- Projects will be listed here -->
           </div>
-          <div class="form-actions" style="margin-top: 20px;">
+          <div class="form-actions" style="margin-top: 20px">
             <button id="btn-open-new-project" class="btn btn-primary">+ New Project</button>
           </div>
         </div>
@@ -290,7 +295,7 @@
         </div>
         <div class="modal-body">
           <p id="confirm-message"></p>
-          <div class="form-actions" style="margin-top: 24px;">
+          <div class="form-actions" style="margin-top: 24px">
             <button id="confirm-yes" class="btn btn-primary">Delete</button>
             <button id="confirm-no" class="btn">Cancel</button>
           </div>

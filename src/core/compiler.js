@@ -12,11 +12,15 @@
  */
 
 import { VirtualFS } from './vfs.js';
+import { SpriteConverter } from './sprite-converter.js';
 
 export class GBDKCompiler {
   constructor() {
     // Virtual filesystem manager
     this.vfs = new VirtualFS();
+
+    // Sprite converter for PNG to C conversion
+    this.spriteConverter = new SpriteConverter();
 
     // WASM modules
     this.modules = {
@@ -179,15 +183,22 @@ export class GBDKCompiler {
     this._log(`Multi-file compilation: ${Object.keys(sources).length} files`, 'info');
     console.log('Files to compile:', Object.keys(sources));
 
+    // Step 0: Convert PNG assets to C source files
+    this._progress('Converting sprites...', 5);
+    const generatedFiles = await this._convertPngAssets(sources);
+
+    // Merge generated files with sources
+    const allSources = { ...sources, ...generatedFiles };
+
     const objectFiles = [];
-    const sourceFiles = Object.keys(sources).filter((f) => f.endsWith('.c'));
+    const sourceFiles = Object.keys(allSources).filter((f) => f.endsWith('.c'));
 
     // Write all .h files to VFS first (they'll be available for #include)
-    const headerFiles = Object.keys(sources).filter((f) => f.endsWith('.h'));
+    const headerFiles = Object.keys(allSources).filter((f) => f.endsWith('.h'));
     for (const headerFile of headerFiles) {
       // Write headers to all module VFSs so they can be included
       for (const moduleName of ['sdcpp', 'sdcc']) {
-        this.vfs.writeFile(moduleName, `/src/${headerFile}`, sources[headerFile]);
+        this.vfs.writeFile(moduleName, `/src/${headerFile}`, allSources[headerFile]);
       }
       this._log(`Loaded header: ${headerFile}`, 'info');
     }
@@ -195,7 +206,7 @@ export class GBDKCompiler {
     // Compile each .c file to .o
     for (let i = 0; i < sourceFiles.length; i++) {
       const filename = sourceFiles[i];
-      const source = sources[filename];
+      const source = allSources[filename];
       const baseName = filename.replace(/\.c$/, '');
 
       this._log(`[${i + 1}/${sourceFiles.length}] Compiling ${filename}...`, 'info');
@@ -229,6 +240,99 @@ export class GBDKCompiler {
     this._log('Multi-file compilation complete!', 'success');
 
     return romData;
+  }
+
+  /**
+   * Convert PNG files to C source code
+   * @param {Object} sources - All project files
+   * @returns {Object} Generated C files { filename: content }
+   */
+  async _convertPngAssets(sources) {
+    const generated = {};
+    const pngFiles = Object.keys(sources).filter(
+      (f) => f.toLowerCase().endsWith('.png') && sources[f]
+    );
+
+    if (pngFiles.length === 0) {
+      return generated;
+    }
+
+    this._log(`Converting ${pngFiles.length} sprite(s) to C...`, 'info');
+
+    for (const pngPath of pngFiles) {
+      try {
+        const content = sources[pngPath];
+
+        // Skip if not a data URL
+        if (typeof content !== 'string' || !content.startsWith('data:image')) {
+          this._log(`Skipping ${pngPath}: not a valid image data URL`, 'warning');
+          continue;
+        }
+
+        // Convert data URL to ImageData
+        const imageData = await this._dataURLToImageData(content);
+        if (!imageData) {
+          this._log(`Failed to decode ${pngPath}`, 'warning');
+          continue;
+        }
+
+        // Generate C variable name from filename
+        const baseName = pngPath
+          .replace(/^.*\//, '') // Remove directory path
+          .replace(/\.png$/i, '') // Remove extension
+          .replace(/[^a-zA-Z0-9_]/g, '_'); // Sanitize
+
+        // Convert to C code
+        const result = this.spriteConverter.convert(
+          imageData.imageData,
+          imageData.width,
+          imageData.height,
+          baseName,
+          {
+            deduplicate: true,
+            detectFlips: true,
+            generateMetasprite: imageData.width > 8 || imageData.height > 8,
+          }
+        );
+
+        // Generate output paths
+        const cFileName = pngPath.replace(/\.png$/i, '.c');
+        const hFileName = pngPath.replace(/\.png$/i, '.h');
+
+        generated[cFileName] = result.cCode;
+        generated[hFileName] = result.hCode;
+
+        this._log(`Generated ${cFileName} (${result.tiles.length} tiles)`, 'success');
+      } catch (error) {
+        this._log(`Error converting ${pngPath}: ${error.message}`, 'error');
+        console.error(`PNG conversion error for ${pngPath}:`, error);
+      }
+    }
+
+    return generated;
+  }
+
+  /**
+   * Convert a data URL to ImageData
+   * @private
+   */
+  async _dataURLToImageData(dataURL) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        resolve({ imageData, width: img.width, height: img.height });
+      };
+      img.onerror = () => {
+        resolve(null);
+      };
+      img.src = dataURL;
+    });
   }
 
   /**
@@ -566,7 +670,9 @@ export class GBDKCompiler {
       // Add library objects
       args.push(...libraryObjects);
 
-      console.log(`Running link-gbz80 with ${args.length} args for ${objectFiles.length} object files`);
+      console.log(
+        `Running link-gbz80 with ${args.length} args for ${objectFiles.length} object files`
+      );
       this._runModule(linker, 'link-gbz80', args);
 
       // Read IHX file

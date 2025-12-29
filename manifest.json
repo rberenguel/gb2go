@@ -1,7 +1,7 @@
 {
   "name": "GB2GO - Game Boy Development IDE",
   "short_name": "GB2GO",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Browser-based Game Boy development environment with GBDK compiler and emulator. Write, compile, and test Game Boy games directly in your browser.",
   "start_url": "./index.html",
   "display": "standalone",

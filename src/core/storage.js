@@ -109,7 +109,8 @@ export class StorageManager {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-      script.integrity = 'sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==';
+      script.integrity =
+        'sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==';
       script.crossOrigin = 'anonymous';
       script.referrerPolicy = 'no-referrer';
 
@@ -563,5 +564,234 @@ export class StorageManager {
     } else {
       localStorage.removeItem('gb2go-current-project');
     }
+  }
+
+  // ========================================
+  // Binary File Utilities
+  // ========================================
+
+  /**
+   * Check if a file path is a binary file based on extension
+   * @param {string} path - File path
+   * @returns {boolean}
+   */
+  isBinaryFile(path) {
+    const ext = path.split('.').pop().toLowerCase();
+    const binaryExtensions = [
+      'png',
+      'jpg',
+      'jpeg',
+      'gif',
+      'bmp',
+      'webp', // Images
+      'gb',
+      'gbc',
+      'bin',
+      'rom', // ROMs
+      'lib',
+      'o',
+      'obj',
+      'a', // Object files
+      'zip',
+      'gz',
+      'tar', // Archives
+      'wav',
+      'mp3',
+      'ogg', // Audio
+    ];
+    return binaryExtensions.includes(ext);
+  }
+
+  /**
+   * Check if a file path is an image
+   * @param {string} path - File path
+   * @returns {boolean}
+   */
+  isImageFile(path) {
+    const ext = path.split('.').pop().toLowerCase();
+    return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(ext);
+  }
+
+  /**
+   * Convert Uint8Array to base64 string
+   * @param {Uint8Array} bytes - Binary data
+   * @returns {string} Base64 encoded string
+   */
+  bytesToBase64(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Convert base64 string to Uint8Array
+   * @param {string} base64 - Base64 encoded string
+   * @returns {Uint8Array} Binary data
+   */
+  base64ToBytes(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  /**
+   * Convert Blob to base64 data URL
+   * @param {Blob} blob - Blob to convert
+   * @returns {Promise<string>} Data URL
+   */
+  async blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  /**
+   * Convert data URL to Blob
+   * @param {string} dataURL - Data URL
+   * @returns {Blob}
+   */
+  dataURLToBlob(dataURL) {
+    const parts = dataURL.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const binary = atob(parts[1]);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+  }
+
+  /**
+   * Save a binary file (PNG, etc.) from a Blob
+   * @param {string} projectId - Project ID
+   * @param {string} path - File path
+   * @param {Blob} blob - File blob
+   * @returns {Promise<void>}
+   */
+  async saveBinaryFile(projectId, path, blob) {
+    const dataURL = await this.blobToDataURL(blob);
+    await this.saveFile(projectId, path, dataURL, 'binary');
+  }
+
+  /**
+   * Load a binary file as Blob
+   * @param {string} projectId - Project ID
+   * @param {string} path - File path
+   * @returns {Promise<Blob|null>}
+   */
+  async loadBinaryFile(projectId, path) {
+    const tx = this.db.transaction(['files'], 'readonly');
+    const fileStore = tx.objectStore('files');
+    const pathIndex = fileStore.index('path');
+
+    const file = await new Promise((resolve, reject) => {
+      const request = pathIndex.get([projectId, path]);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error(`Failed to load file: ${request.error}`));
+    });
+
+    if (!file || !file.content) return null;
+
+    // If stored as data URL, convert to Blob
+    if (typeof file.content === 'string' && file.content.startsWith('data:')) {
+      return this.dataURLToBlob(file.content);
+    }
+
+    // If stored as Uint8Array (legacy), convert to Blob
+    if (file.content instanceof Uint8Array) {
+      return new Blob([file.content]);
+    }
+
+    return null;
+  }
+
+  /**
+   * Load a file and return as ImageData for canvas operations
+   * @param {string} projectId - Project ID
+   * @param {string} path - File path
+   * @returns {Promise<{imageData: ImageData, width: number, height: number}|null>}
+   */
+  async loadImageAsImageData(projectId, path) {
+    const blob = await this.loadBinaryFile(projectId, path);
+    if (!blob) return null;
+
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        resolve({ imageData, width: img.width, height: img.height });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image'));
+      };
+      img.src = url;
+    });
+  }
+
+  /**
+   * Generate a thumbnail data URL for an image file
+   * @param {string} projectId - Project ID
+   * @param {string} path - File path
+   * @param {number} maxSize - Maximum dimension (default 32)
+   * @returns {Promise<string|null>} Thumbnail data URL
+   */
+  async generateThumbnail(projectId, path, maxSize = 32) {
+    const blob = await this.loadBinaryFile(projectId, path);
+    if (!blob) return null;
+
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+
+        // Calculate thumbnail size maintaining aspect ratio
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false; // Crisp pixel art
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
   }
 }
