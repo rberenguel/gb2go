@@ -393,6 +393,18 @@ body {
   transition: background-color 0.15s ease;
   font-family: var(--font-family-code);
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.file-tree-item .file-name {
+  flex: 1;
+}
+
+.file-tree-item .file-actions {
+  display: flex;
+  gap: 2px;
 }
 
 .file-tree-item:hover {
@@ -1139,4 +1151,119 @@ body {
   background-color: #3e3e42;
   color: #c586c0; /* Purple-ish */
   border: 1px solid #c586c0;
+}
+
+/* ===== Project Switcher Button ===== */
+.project-name-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d4d4d4;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-left: 12px;
+}
+
+.project-name-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== Form Styles ===== */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #d4d4d4;
+  font-weight: 500;
+}
+
+.form-group input[type='text'],
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  background: #1e1e1e;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form-group input[type='text']:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007acc;
+  background: #252526;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 6px;
+  color: #858585;
+  font-size: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+/* ===== Project List ===== */
+.project-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.project-item {
+  padding: 12px;
+  background: #2d2d30;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-item:hover {
+  background: #37373d;
+  border-color: #007acc;
+}
+
+.project-item.active {
+  background: #094771;
+  border-color: #007acc;
+}
+
+.project-item-name {
+  font-weight: 500;
+  color: #d4d4d4;
+  margin-bottom: 4px;
+}
+
+.project-item-meta {
+  font-size: 12px;
+  color: #858585;
+}
+
+.project-item-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.project-item-actions button {
+  padding: 4px 8px;
+  font-size: 12px;
 }

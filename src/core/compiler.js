@@ -126,7 +126,12 @@ export class GBDKCompiler {
     this.isCompiling = true;
 
     try {
-      const { source, filename = 'main.c' } = options;
+      const { source, filename = 'main.c', additionalSources = null } = options;
+
+      // Check if this is a multi-file compilation
+      if (additionalSources && Object.keys(additionalSources).length > 1) {
+        return await this._compileMultiFile(additionalSources, filename);
+      }
 
       this._log(`Compiling ${filename}...`, 'info');
       console.log('GBDKCompiler: Starting compilation');
@@ -164,6 +169,66 @@ export class GBDKCompiler {
     } finally {
       this.isCompiling = false;
     }
+  }
+
+  /**
+   * Compile multiple source files
+   * @private
+   */
+  async _compileMultiFile(sources, mainFilename) {
+    this._log(`Multi-file compilation: ${Object.keys(sources).length} files`, 'info');
+    console.log('Files to compile:', Object.keys(sources));
+
+    const objectFiles = [];
+    const sourceFiles = Object.keys(sources).filter((f) => f.endsWith('.c'));
+
+    // Write all .h files to VFS first (they'll be available for #include)
+    const headerFiles = Object.keys(sources).filter((f) => f.endsWith('.h'));
+    for (const headerFile of headerFiles) {
+      // Write headers to all module VFSs so they can be included
+      for (const moduleName of ['sdcpp', 'sdcc']) {
+        this.vfs.writeFile(moduleName, `/src/${headerFile}`, sources[headerFile]);
+      }
+      this._log(`Loaded header: ${headerFile}`, 'info');
+    }
+
+    // Compile each .c file to .o
+    for (let i = 0; i < sourceFiles.length; i++) {
+      const filename = sourceFiles[i];
+      const source = sources[filename];
+      const baseName = filename.replace(/\.c$/, '');
+
+      this._log(`[${i + 1}/${sourceFiles.length}] Compiling ${filename}...`, 'info');
+
+      // Step 1: Preprocess
+      this._progress(`Preprocessing ${filename}...`, 20 + (i * 50) / sourceFiles.length);
+      const preprocessed = await this._preprocess(source, filename);
+
+      // Step 2: Compile to assembly
+      this._progress(`Compiling ${filename}...`, 30 + (i * 50) / sourceFiles.length);
+      const assembly = await this._compileToAssembly(preprocessed, filename);
+
+      // Step 3: Assemble to object code
+      this._progress(`Assembling ${filename}...`, 40 + (i * 50) / sourceFiles.length);
+      const objectFile = await this._assemble(assembly, filename);
+
+      objectFiles.push({ name: `${baseName}.o`, data: objectFile });
+    }
+
+    this._log(`Compiled ${objectFiles.length} object files`, 'success');
+
+    // Step 4: Link all object files together
+    this._progress('Linking...', 75);
+    const ihxFile = await this._linkMultiple(objectFiles);
+
+    // Step 5: Convert to ROM
+    this._progress('Generating ROM...', 90);
+    const romData = this._ihxToRom(ihxFile);
+
+    this._progress('Complete!', 100);
+    this._log('Multi-file compilation complete!', 'success');
+
+    return romData;
   }
 
   /**
@@ -418,6 +483,100 @@ export class GBDKCompiler {
     } catch (error) {
       console.error('Linking error:', error);
       throw new Error(`Linking failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Link multiple object files together
+   * @private
+   */
+  async _linkMultiple(objectFiles) {
+    this._log(`Linking ${objectFiles.length} object files...`, 'info');
+
+    const outputFile = `/build/game.ihx`;
+
+    try {
+      // Ensure linker is loaded
+      const linker = await this._ensureModuleLoaded('linker');
+
+      // Write all object files to VFS
+      for (const { name, data } of objectFiles) {
+        const objectPath = `/build/${name}`;
+        this.vfs.writeFile('linker', objectPath, data);
+        console.log(`Written ${objectPath} to linker VFS`);
+      }
+
+      // Change to /build directory for linking
+      linker.FS.chdir('/build');
+      console.log('Changed linker working directory to:', linker.FS.cwd());
+
+      // Expand libraries to object files
+      const libPaths = [
+        { dir: '/lib/small/asxxxx/gb', file: 'gb.lib' },
+        { dir: '/lib/small/asxxxx/gbz80', file: 'gbz80.lib' },
+      ];
+
+      const libraryObjects = [];
+      let crt0Path = null;
+
+      for (const { dir, file } of libPaths) {
+        try {
+          const libContent = this.vfs.readFile('linker', `${dir}/${file}`);
+          const objectFileList = libContent
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+
+          console.log(`Expanded ${file} to ${objectFileList.length} object files`);
+
+          for (const objFile of objectFileList) {
+            const fullPath = `${dir}/${objFile}`;
+
+            if (objFile === 'crt0.o') {
+              crt0Path = fullPath;
+            } else {
+              libraryObjects.push(fullPath);
+            }
+          }
+        } catch (e) {
+          console.warn(`Failed to expand library ${file}:`, e);
+        }
+      }
+
+      if (!crt0Path) {
+        console.warn('crt0.o not found in libraries! ROM may not boot.');
+      }
+
+      // Run link-gbz80 with all object files
+      const args = [
+        '--',
+        '-i',
+        'game', // Output base name
+      ];
+
+      if (crt0Path) {
+        args.push(crt0Path); // crt0.o MUST be first
+      }
+
+      // Add all user object files
+      for (const { name } of objectFiles) {
+        args.push(name);
+      }
+
+      // Add library objects
+      args.push(...libraryObjects);
+
+      console.log(`Running link-gbz80 with ${args.length} args for ${objectFiles.length} object files`);
+      this._runModule(linker, 'link-gbz80', args);
+
+      // Read IHX file
+      const ihxFile = this.vfs.readFile('linker', outputFile);
+
+      this._log('Multi-file linking complete', 'success');
+      return ihxFile;
+    } catch (error) {
+      console.error('Multi-file linking error:', error);
+      throw new Error(`Multi-file linking failed: ${error.message}`);
     }
   }
 

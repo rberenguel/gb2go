@@ -1,9 +1,9 @@
 /**
- * Default "Hello World" project template for Game Boy
+ * Example project - The default project with graphics demo
  */
-
-export const helloWorldTemplate = {
-  name: 'Hello World',
+export const exampleTemplate = {
+  name: 'Example',
+  isSystemProject: true,
   files: {
     'main.c': `#include <gb/gb.h>
 #include <gb/drawing.h>
@@ -69,3 +69,28 @@ void main(void) {
 `,
   },
 };
+
+/**
+ * Minimal starter template
+ */
+export const minimalTemplate = {
+  name: 'Minimal',
+  files: {
+    'main.c': `#include <gb/gb.h>
+
+void main(void) {
+    // Your Game Boy program starts here!
+
+    // Simple example: infinite loop
+    while(1) {
+        // Wait for vertical blank (vsync)
+        wait_vbl_done();
+    }
+}
+`,
+  },
+};
+
+// Legacy exports
+export const helloWorldTemplate = exampleTemplate;
+export const graphicsDemoTemplate = exampleTemplate;

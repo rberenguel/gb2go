@@ -44,7 +44,10 @@
       <div id="toolbar">
         <div class="toolbar-section">
           <h1 class="app-title"><img src="./icons/icon-192.png" alt="G" class="app-logo" />B2GO</h1>
-          <span class="app-subtitle">Game Boy development IDE in the browser</span>
+          <button id="btn-project-switcher" class="project-name-btn" title="Switch project">
+            <span id="current-project-name">Loading...</span>
+            <span style="margin-left: 4px;">▼</span>
+          </button>
         </div>
 
         <div class="toolbar-section toolbar-actions">
@@ -183,6 +186,114 @@
           <a href="https://github.com/rberenguel/gb2go" target="_blank" class="github-link">
             <i class="iconoir-github-circle"></i> View on GitHub
           </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- New File Modal -->
+    <div id="new-file-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>New File</h2>
+          <button id="close-new-file" class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="new-file-form">
+            <div class="form-group">
+              <label for="new-file-name">File Name:</label>
+              <input
+                type="text"
+                id="new-file-name"
+                placeholder="example.c"
+                required
+                autocomplete="off"
+              />
+              <small>Suggested: .c (source), .h (header), .asm (assembly), .txt (notes)</small>
+            </div>
+            <div class="form-group">
+              <label for="new-file-template">Template:</label>
+              <select id="new-file-template">
+                <option value="empty">Empty File</option>
+                <option value="c-source">C Source File</option>
+                <option value="c-header">C Header File</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Create</button>
+              <button type="button" id="cancel-new-file" class="btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Project Modal -->
+    <div id="new-project-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>New Project</h2>
+          <button id="close-new-project" class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="new-project-form">
+            <div class="form-group">
+              <label for="new-project-name">Project Name:</label>
+              <input
+                type="text"
+                id="new-project-name"
+                placeholder="My Game Boy Game"
+                required
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-group">
+              <label for="new-project-template">Template:</label>
+              <select id="new-project-template">
+                <option value="example">Example (Graphics Demo)</option>
+                <option value="minimal">Minimal Starter</option>
+                <option value="empty">Empty Project</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Create</button>
+              <button type="button" id="cancel-new-project" class="btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Switcher Modal -->
+    <div id="project-switcher-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Switch Project</h2>
+          <button id="close-project-switcher" class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="project-list" class="project-list">
+            <!-- Projects will be listed here -->
+          </div>
+          <div class="form-actions" style="margin-top: 20px;">
+            <button id="btn-open-new-project" class="btn btn-primary">+ New Project</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirm-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="confirm-title">Confirm</h2>
+          <button id="close-confirm" class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-message"></p>
+          <div class="form-actions" style="margin-top: 24px;">
+            <button id="confirm-yes" class="btn btn-primary">Delete</button>
+            <button id="confirm-no" class="btn">Cancel</button>
+          </div>
         </div>
       </div>
     </div>

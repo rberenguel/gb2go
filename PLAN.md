@@ -138,34 +138,52 @@ gb2go/
 - [x] Create GBDKCompiler class
 - [x] Implement `_loadWasmModule(jsPath)` helper
 - [x] Implement `initialize()` - Load all WASM modules (sdcpp, sdcc, as-gbz80, link-gbz80)
-- [x] Implement `compile(options)` - Orchestrate full 5-step pipeline
+- [x] Implement `compile(options)` - Orchestrate full compilation pipeline
 - [x] Implement `_preprocess()` - C preprocessing with sdcpp
 - [x] Implement `_compileToAssembly()` - C to Assembly with sdcc
 - [x] Implement `_assemble()` - Assembly to Object with as-gbz80
-- [x] Implement `_link()` - Object files to Intel HEX with link-gbz80
+- [x] Implement `_link()` - Object files to Intel HEX with link-gbz80 (single file)
+- [x] Implement `_linkMultiple()` - Link multiple object files together
+- [x] Implement `_compileMultiFile()` - Multi-file compilation workflow
 - [x] Implement `_ihxToRom()` - Intel HEX to .gb ROM format
 - [x] Implement `_runModule()` - Generic WASM executor with stdout/stderr capture
 - [x] Intel HEX parser and ROM header generation
+- [x] Auto-detect all .c files in project and compile them
+- [x] Auto-load all .h files from project into compiler VFS
 - [x] Test with simple "Hello World" C program - **SUCCESSFULLY COMPILED!**
+- [x] Test with multi-file projects - **SUCCESSFULLY COMPILED!**
 
 ### Phase 4: Storage
 
 **Critical File**: `src/core/storage.js`
 
-- [ ] Create StorageManager class
-- [ ] Implement IndexedDB initialization (projects + files object stores)
-- [ ] Implement `createProject(name, template)` method
-- [ ] Implement `loadProject(projectId)` method
-- [ ] Implement `saveProject(project)` method
-- [ ] Implement `saveFile(projectId, path, content)` method
-- [ ] Implement `deleteFile(projectId, path)` method
-- [ ] Implement `listProjects()` method
-- [ ] Implement `deleteProject(projectId)` method
-- [ ] Implement ZIP export with JSZip
-- [ ] Implement ZIP import
-- [ ] Implement localStorage helpers (current project ID)
-- [ ] Request persistent storage API on Safari iOS
-- [ ] Test storage operations in browser
+- [x] Create StorageManager class
+- [x] Implement IndexedDB initialization (projects + files object stores)
+- [x] Implement `createProject(name, template)` method
+- [x] Implement `loadProject(projectId)` method
+- [x] Implement `saveProject(project)` method
+- [x] Implement `saveFile(projectId, path, content)` method
+- [x] Implement `deleteFile(projectId, path)` method
+- [x] Implement `listFiles(projectId)` method
+- [x] Implement `listProjects()` method
+- [x] Implement `deleteProject(projectId)` method
+- [x] Implement ZIP export with JSZip (loads from CDN)
+- [x] Implement ZIP import
+- [x] Implement localStorage helpers (current project ID)
+- [x] Request persistent storage API on Safari iOS
+- [x] Integration with main.js (auto-save with 1s debounce)
+- [x] File browser shows actual project files with click-to-switch
+- [x] File creation with templates (C source, C header, empty)
+- [x] File deletion with modal confirmation
+- [x] File renaming
+- [x] Project switcher with list of all projects
+- [x] Project deletion with modal confirmation
+- [x] Example project auto-recreates from template when deleted
+- [ ] Folder/directory support for organizing files
+- [ ] File moving between folders
+- [ ] Nested folder creation
+- [ ] Folder deletion (with contents)
+- [ ] Tree view in file browser for folder hierarchy
 
 ### Phase 5: Emulator
 
@@ -190,34 +208,97 @@ gb2go/
 
 ### Phase 6: UI Components
 
-- [x] Create `src/templates/hello-world.js` with default C code
+- [x] Create `src/templates/hello-world.js` with Example template (graphics demo)
 - [x] Create `src/main.js`
-  - [x] Initialize storage (partial), compiler, emulator
-  - [x] Setup editor
-  - [x] Load or create project
-  - [x] Wire up UI components (Toolbar, File Browser stub)
+  - [x] Initialize storage, compiler, emulator
+  - [x] Setup editor with auto-save (1s debounce)
+  - [x] Load or create project from IndexedDB
+  - [x] Wire up UI components (Toolbar, File Browser, Modals)
   - [x] Add error/log display
   - [x] Implement About Dialog
+  - [x] Implement API Browser with GBDK documentation
+  - [x] Implement ZIP export/import functionality
+  - [x] File switching between multiple files in project
+  - [x] New File dialog with templates
+  - [x] New Project dialog with templates
+  - [x] Project switcher modal
+  - [x] Confirmation modal (replaces browser alerts)
+  - [x] File actions (rename, delete) with hover buttons
+  - [x] Multi-file compilation support
 - [x] Update `index.html` with complete UI structure
 - [x] Update `src/styles.css` with responsive, iPad-optimized styling
+- [ ] Add keyboard shortcuts (Ctrl+B to compile, Ctrl+S to save, etc.)
+- [ ] Add drag-and-drop file upload
 - [ ] Refactor UI components into separate files (currently all in main.js)
   - [ ] `src/ui/editor.js`
   - [ ] `src/ui/toolbar.js`
   - [ ] `src/ui/file-browser.js`
+  - [ ] `src/ui/modals.js`
 
 ### Phase 7: PWA & Testing
 
-- [ ] Add `manifest.json` with app metadata, icons, colors
-- [ ] Add app icons (192x192, 512x512)
-- [ ] Optional: Add service worker for offline support
+- [x] Add `manifest.json` with app metadata, icons, colors
+- [x] Add app icons (192x192)
+- [ ] Add service worker for offline support
 - [ ] Test full compilation workflow on desktop
+- [ ] Test multi-file compilation
 - [ ] Test on iPad Safari
   - [ ] Test touch controls
   - [ ] Test storage persistence
   - [ ] Test ZIP export/import
   - [ ] Test "Add to Home Screen"
-- [ ] Deploy to static hosting (GitHub Pages/Netlify)
+  - [ ] Test persistent storage API
+- [x] Deploy to static hosting (GitHub Pages/Netlify)
 - [ ] Verify deployment works on iPad
+
+### Phase 8: Advanced Features (Future)
+
+**File Management:**
+- [ ] Folder/directory support
+  - [ ] Create folders in project
+  - [ ] Delete folders (with contents warning)
+  - [ ] Move files between folders
+  - [ ] Tree view in file browser
+  - [ ] Collapse/expand folders
+- [ ] Drag-and-drop file organization
+- [ ] File search/filter in project
+- [ ] Recent files list
+
+**Sprite/Asset Tools:**
+- [ ] Sprite editor (pixel art tool)
+  - [ ] Draw sprites in browser
+  - [ ] Color palette selection (GB 4-color palette)
+  - [ ] Export sprite data to C arrays
+  - [ ] Save sprites to project folders (e.g., `assets/sprites/`)
+- [ ] Tileset editor
+- [ ] Map editor (for backgrounds)
+- [ ] Asset import (PNG → GB tiles)
+- [ ] Asset preview in file browser
+
+**Development Tools:**
+- [ ] Debugger integration with binjgb
+- [ ] Breakpoints in editor
+- [ ] Memory viewer
+- [ ] CPU register inspection
+- [ ] Step-through execution
+- [ ] Watch expressions
+
+**Editor Enhancements:**
+- [ ] Keyboard shortcuts (Ctrl+B compile, Ctrl+S save, etc.)
+- [ ] Find/replace in file
+- [ ] Find in project (search all files)
+- [ ] Go to definition (LSP-like features)
+- [ ] Code snippets
+- [ ] Error highlighting in editor
+- [ ] Compiler errors jump to line
+
+**Emulator Enhancements:**
+- [ ] Keyboard input support (arrow keys, Z/X, Enter/Space)
+- [ ] Save states
+- [ ] Screenshot capture
+- [ ] Audio enable/disable toggle
+- [ ] Speed control (1x, 2x, 4x)
+- [ ] Rewind feature
 
 ## Critical Challenges & Solutions
 
