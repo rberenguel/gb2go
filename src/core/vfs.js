@@ -328,10 +328,13 @@ export class VirtualFS {
 
       try {
         Module.FS.mkdir(currentPath);
+        console.log(`VFS: Created directory ${currentPath}`);
       } catch (e) {
         // Ignore if directory already exists
-        if (e.code !== 'EEXIST') {
-          // Only log real errors
+        if (e.code === 'EEXIST') {
+          console.log(`VFS: Directory ${currentPath} already exists`);
+        } else {
+          console.warn(`VFS: Failed to create directory ${currentPath}:`, e.message);
         }
       }
     }

@@ -28,6 +28,9 @@
     <link rel="stylesheet" href="./fonts/monoid.css" />
     <link rel="stylesheet" href="./fonts/iconoir/iconoir.css" />
 
+    <!-- Split.js for resizable panels -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.5/split.min.js"></script>
+
     <!-- Import Map for CodeMirror -->
     <script type="importmap">
       {
@@ -255,6 +258,8 @@
               <label for="new-project-template">Template:</label>
               <select id="new-project-template">
                 <option value="example">Example (Graphics Demo)</option>
+                <option value="sprite">Sprite (Inline Data)</option>
+                <option value="sprite-png">Sprite (PNG Workflow)</option>
                 <option value="minimal">Minimal Starter</option>
                 <option value="empty">Empty Project</option>
               </select>

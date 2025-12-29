@@ -7,7 +7,13 @@ import { GBDKCompiler } from './core/compiler.js';
 import { GameBoyEmulator } from './core/emulator.js';
 import { StorageManager } from './core/storage.js';
 import { SpriteEditor } from './ui/sprite-editor.js';
-import { exampleTemplate, minimalTemplate } from './templates/hello-world.js';
+import {
+  exampleTemplate,
+  minimalTemplate,
+  spriteTemplate,
+  spritePngTemplate,
+  createSpriteExamplePng,
+} from './templates/hello-world.js';
 
 // Application state
 const app = {
@@ -272,6 +278,59 @@ function initUI() {
   }
 
   console.log('UI initialized');
+
+  // Initialize Split.js for resizable panels
+  initSplitPanels();
+}
+
+/**
+ * Initialize Split.js for resizable panels
+ */
+function initSplitPanels() {
+  // Check if Split.js is available
+  if (typeof Split === 'undefined') {
+    console.warn('Split.js not loaded, panels will not be resizable');
+    return;
+  }
+
+  // Horizontal split for main panels (file browser, editor, emulator)
+  try {
+    Split(['#file-browser-panel', '#editor-panel', '#emulator-panel'], {
+      sizes: [15, 55, 30], // Initial percentages
+      minSize: [120, 200, 180],
+      gutterSize: 4,
+      snapOffset: 0,
+      onDragEnd: () => {
+        // Refresh CodeMirror after resize
+        if (app.editor) {
+          app.editor.requestMeasure();
+        }
+      },
+    });
+    console.log('Horizontal split initialized');
+  } catch (e) {
+    console.warn('Failed to initialize horizontal split:', e);
+  }
+
+  // Vertical split for editor/console
+  try {
+    Split(['#editor-container', '#console-container'], {
+      direction: 'vertical',
+      sizes: [75, 25], // Initial percentages
+      minSize: [100, 60],
+      gutterSize: 4,
+      snapOffset: 0,
+      onDragEnd: () => {
+        // Refresh CodeMirror after resize
+        if (app.editor) {
+          app.editor.requestMeasure();
+        }
+      },
+    });
+    console.log('Vertical split initialized');
+  } catch (e) {
+    console.warn('Failed to initialize vertical split:', e);
+  }
 }
 
 /**
@@ -496,42 +555,20 @@ async function handleCompile() {
 
     log(`Found ${cFiles.length} C source file(s): ${cFiles.join(', ')}`, 'info');
 
-    // If only one file, use simple compilation
-    if (cFiles.length === 1) {
-      const filename = cFiles[0];
-      const source = app.currentProject.files[filename];
+    // Build all sources including PNG files for sprite conversion
+    const allSources = { ...app.currentProject.files };
 
-      log(`Compiling ${filename}...`, 'info');
-      const romData = await app.compiler.compile({
-        source: source,
-        filename: filename,
-      });
+    // Find main.c or use first .c file as entry point
+    const mainFile = cFiles.includes('main.c') ? 'main.c' : cFiles[0];
+    log(`Using ${mainFile} as entry point`, 'info');
 
-      app.compiledRom = romData;
-    } else {
-      // Multi-file compilation
-      log(`Compiling multi-file project...`, 'info');
+    const romData = await app.compiler.compile({
+      source: app.currentProject.files[mainFile],
+      filename: mainFile,
+      additionalSources: allSources, // Pass all sources including PNGs
+    });
 
-      // For multi-file projects, we need to pass all sources to the compiler
-      // The compiler needs to be updated to handle this, but for now we'll
-      // compile with all sources combined in the VFS
-      const allSources = {};
-      for (const filename of cFiles) {
-        allSources[filename] = app.currentProject.files[filename];
-      }
-
-      // Find main.c or use first file as entry point
-      const mainFile = cFiles.includes('main.c') ? 'main.c' : cFiles[0];
-      log(`Using ${mainFile} as entry point`, 'info');
-
-      const romData = await app.compiler.compile({
-        source: app.currentProject.files[mainFile],
-        filename: mainFile,
-        additionalSources: allSources, // Pass all sources
-      });
-
-      app.compiledRom = romData;
-    }
+    app.compiledRom = romData;
 
     // app.compiledRom is already set above
 
@@ -1501,6 +1538,15 @@ function showNewProjectDialog() {
       let newProject;
       if (template === 'example') {
         newProject = await app.storage.createProject(projectName, exampleTemplate);
+      } else if (template === 'sprite') {
+        newProject = await app.storage.createProject(projectName, spriteTemplate);
+      } else if (template === 'sprite-png') {
+        // Create project with PNG workflow template
+        newProject = await app.storage.createProject(projectName, spritePngTemplate);
+        // Generate and save the sprite PNG
+        const pngDataUrl = createSpriteExamplePng();
+        await app.storage.saveFile(newProject.id, 'sprites/player.png', pngDataUrl, 'binary');
+        log('Generated sprites/player.png - edit it with the sprite editor!', 'info');
       } else if (template === 'minimal') {
         newProject = await app.storage.createProject(projectName, minimalTemplate);
       } else {

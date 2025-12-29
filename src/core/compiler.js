@@ -132,13 +132,26 @@ export class GBDKCompiler {
     try {
       const { source, filename = 'main.c', additionalSources = null } = options;
 
-      // Check if this is a multi-file compilation
-      if (additionalSources && Object.keys(additionalSources).length > 1) {
+      // Log what we received
+      console.log('Compile options:', {
+        filename,
+        hasAdditionalSources: !!additionalSources,
+        additionalSourcesKeys: additionalSources ? Object.keys(additionalSources) : [],
+      });
+
+      // Check if we have PNG files that need conversion
+      const hasPngFiles =
+        additionalSources &&
+        Object.keys(additionalSources).some((f) => f.toLowerCase().endsWith('.png'));
+
+      // Use multi-file compilation if we have multiple files OR PNG files
+      if (additionalSources && (Object.keys(additionalSources).length > 1 || hasPngFiles)) {
+        this._log(`Using multi-file compilation (${Object.keys(additionalSources).length} files)`, 'info');
         return await this._compileMultiFile(additionalSources, filename);
       }
 
       this._log(`Compiling ${filename}...`, 'info');
-      console.log('GBDKCompiler: Starting compilation');
+      console.log('GBDKCompiler: Starting single-file compilation');
 
       // Step 1: Preprocess with sdcpp (sdcc can't invoke it as subprocess in WASM)
       this._progress('Preprocessing...', 20);
@@ -187,21 +200,86 @@ export class GBDKCompiler {
     this._progress('Converting sprites...', 5);
     const generatedFiles = await this._convertPngAssets(sources);
 
+    if (Object.keys(generatedFiles).length > 0) {
+      this._log(`Generated ${Object.keys(generatedFiles).length} files from sprites`, 'success');
+      console.log('Generated files:', Object.keys(generatedFiles));
+    }
+
     // Merge generated files with sources
     const allSources = { ...sources, ...generatedFiles };
 
     const objectFiles = [];
     const sourceFiles = Object.keys(allSources).filter((f) => f.endsWith('.c'));
-
-    // Write all .h files to VFS first (they'll be available for #include)
     const headerFiles = Object.keys(allSources).filter((f) => f.endsWith('.h'));
+
+    this._log(`Source files: ${sourceFiles.join(', ')}`, 'info');
+    if (headerFiles.length > 0) {
+      this._log(`Header files: ${headerFiles.join(', ')}`, 'info');
+    }
+
+    // IMPORTANT: Load modules BEFORE writing headers to their VFS
+    this._progress('Loading compiler modules...', 10);
+    await this._ensureModuleLoaded('sdcpp');
+    await this._ensureModuleLoaded('sdcc');
+
+    // Write all .h files to VFS - both to /src/ (for local includes) and /include/ (standard path)
     for (const headerFile of headerFiles) {
-      // Write headers to all module VFSs so they can be included
+      const headerContent = allSources[headerFile];
+
+      if (!headerContent) {
+        this._log(`WARNING: Header ${headerFile} has no content!`, 'warning');
+        continue;
+      }
+
+      console.log(`Header ${headerFile} content (first 200 chars):`, headerContent.substring(0, 200));
+
+      // Write headers to multiple locations to ensure they're found
+      const headerPaths = [
+        `/src/${headerFile}`, // For local includes
+        `/include/${headerFile}`, // For -I/include path
+      ];
+
       for (const moduleName of ['sdcpp', 'sdcc']) {
-        this.vfs.writeFile(moduleName, `/src/${headerFile}`, allSources[headerFile]);
+        for (const headerPath of headerPaths) {
+          this.vfs.writeFile(moduleName, headerPath, headerContent);
+          console.log(`Wrote ${headerFile} to ${moduleName}:${headerPath}`);
+        }
       }
       this._log(`Loaded header: ${headerFile}`, 'info');
     }
+
+    // List /src directory contents for debugging
+    try {
+      const sdcpp = this.vfs.modules.get('sdcpp');
+      if (sdcpp && sdcpp.FS) {
+        console.log('Listing /src directory:');
+        const srcContents = sdcpp.FS.readdir('/src');
+        console.log('/src contents:', srcContents);
+
+        // Check if sprites subdirectory exists
+        if (srcContents.includes('sprites')) {
+          const spritesContents = sdcpp.FS.readdir('/src/sprites');
+          console.log('/src/sprites contents:', spritesContents);
+        }
+
+        // Try to read the header file directly
+        try {
+          const headerContent = sdcpp.FS.readFile('/src/sprites/player.h', { encoding: 'utf8' });
+          console.log('Successfully read /src/sprites/player.h, length:', headerContent.length);
+        } catch (readErr) {
+          console.error('Failed to read /src/sprites/player.h:', readErr.message);
+        }
+      }
+    } catch (e) {
+      console.log('Could not list /src:', e.message);
+    }
+
+    // Build a map of project headers for include resolution
+    const projectHeaders = {};
+    for (const headerFile of headerFiles) {
+      projectHeaders[headerFile] = allSources[headerFile];
+    }
+    console.log('Project headers available for include resolution:', Object.keys(projectHeaders));
 
     // Compile each .c file to .o
     for (let i = 0; i < sourceFiles.length; i++) {
@@ -211,9 +289,9 @@ export class GBDKCompiler {
 
       this._log(`[${i + 1}/${sourceFiles.length}] Compiling ${filename}...`, 'info');
 
-      // Step 1: Preprocess
+      // Step 1: Preprocess (with project headers for manual include resolution)
       this._progress(`Preprocessing ${filename}...`, 20 + (i * 50) / sourceFiles.length);
-      const preprocessed = await this._preprocess(source, filename);
+      const preprocessed = await this._preprocess(source, filename, projectHeaders);
 
       // Step 2: Compile to assembly
       this._progress(`Compiling ${filename}...`, 30 + (i * 50) / sourceFiles.length);
@@ -249,11 +327,17 @@ export class GBDKCompiler {
    */
   async _convertPngAssets(sources) {
     const generated = {};
-    const pngFiles = Object.keys(sources).filter(
+    const allFiles = Object.keys(sources);
+    console.log('All source files:', allFiles);
+
+    const pngFiles = allFiles.filter(
       (f) => f.toLowerCase().endsWith('.png') && sources[f]
     );
 
+    console.log('PNG files found:', pngFiles);
+
     if (pngFiles.length === 0) {
+      this._log('No PNG sprites to convert', 'info');
       return generated;
     }
 
@@ -262,25 +346,29 @@ export class GBDKCompiler {
     for (const pngPath of pngFiles) {
       try {
         const content = sources[pngPath];
+        console.log(`Processing PNG: ${pngPath}, content type: ${typeof content}, starts with: ${typeof content === 'string' ? content.substring(0, 30) : 'N/A'}`);
 
         // Skip if not a data URL
         if (typeof content !== 'string' || !content.startsWith('data:image')) {
-          this._log(`Skipping ${pngPath}: not a valid image data URL`, 'warning');
+          this._log(`Skipping ${pngPath}: not a valid image data URL (got ${typeof content})`, 'warning');
           continue;
         }
 
         // Convert data URL to ImageData
+        this._log(`Decoding ${pngPath}...`, 'info');
         const imageData = await this._dataURLToImageData(content);
         if (!imageData) {
           this._log(`Failed to decode ${pngPath}`, 'warning');
           continue;
         }
+        console.log(`Decoded ${pngPath}: ${imageData.width}x${imageData.height}`);
 
         // Generate C variable name from filename
         const baseName = pngPath
           .replace(/^.*\//, '') // Remove directory path
           .replace(/\.png$/i, '') // Remove extension
           .replace(/[^a-zA-Z0-9_]/g, '_'); // Sanitize
+        console.log(`Generated base name: ${baseName}`);
 
         // Convert to C code
         const result = this.spriteConverter.convert(
@@ -299,10 +387,15 @@ export class GBDKCompiler {
         const cFileName = pngPath.replace(/\.png$/i, '.c');
         const hFileName = pngPath.replace(/\.png$/i, '.h');
 
+        console.log(`Generated C file: ${cFileName}, length: ${result.cCode?.length || 0}`);
+        console.log(`Generated H file: ${hFileName}, length: ${result.hCode?.length || 0}`);
+        console.log(`H file content:\n${result.hCode}`);
+
         generated[cFileName] = result.cCode;
         generated[hFileName] = result.hCode;
 
         this._log(`Generated ${cFileName} (${result.tiles.length} tiles)`, 'success');
+        this._log(`Generated ${hFileName}`, 'success');
       } catch (error) {
         this._log(`Error converting ${pngPath}: ${error.message}`, 'error');
         console.error(`PNG conversion error for ${pngPath}:`, error);
@@ -336,10 +429,55 @@ export class GBDKCompiler {
   }
 
   /**
+   * Manually resolve #include "..." directives for project headers
+   * This is needed because WASM sdcpp has issues finding headers in subdirectories
+   * @private
+   * @param {string} source - C source code
+   * @param {Object} projectHeaders - Map of header paths to content
+   * @returns {string} Source with project includes resolved
+   */
+  _resolveProjectIncludes(source, projectHeaders) {
+    console.log('_resolveProjectIncludes called');
+    console.log('Source first 200 chars:', source.substring(0, 200));
+    console.log('Available headers:', Object.keys(projectHeaders));
+
+    // Match #include "path" (not <path> which are system headers)
+    const includeRegex = /#include\s+"([^"]+)"/g;
+
+    let result = source;
+    let match;
+
+    // Find all matches first
+    const matches = [];
+    while ((match = includeRegex.exec(source)) !== null) {
+      matches.push({ full: match[0], path: match[1], index: match.index });
+    }
+    console.log('Found include directives:', matches);
+
+    // Replace from end to start to preserve indices
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const m = matches[i];
+      if (projectHeaders[m.path]) {
+        console.log(`Resolving project include: ${m.path}`);
+        const replacement = `// BEGIN included from "${m.path}"\n${projectHeaders[m.path]}\n// END included from "${m.path}"`;
+        result = result.substring(0, m.index) + replacement + result.substring(m.index + m.full.length);
+      } else {
+        console.log(`Include "${m.path}" not found in project headers, leaving for sdcpp`);
+      }
+    }
+
+    console.log('Resolved source first 300 chars:', result.substring(0, 300));
+    return result;
+  }
+
+  /**
    * Step 1: Preprocess C source with sdcpp
    * @private
+   * @param {string} source - C source code
+   * @param {string} filename - Source filename
+   * @param {Object} projectHeaders - Map of header paths to content (for resolving local includes)
    */
-  async _preprocess(source, filename) {
+  async _preprocess(source, filename, projectHeaders = {}) {
     this._log('Running preprocessor...', 'info');
 
     const inputFile = `/src/${filename}`;
@@ -349,8 +487,21 @@ export class GBDKCompiler {
       // Ensure sdcpp is loaded
       const sdcpp = await this._ensureModuleLoaded('sdcpp');
 
+      // Manually resolve project #include "..." directives since WASM sdcpp has issues with subdirs
+      let resolvedSource = source;
+      if (Object.keys(projectHeaders).length > 0) {
+        resolvedSource = this._resolveProjectIncludes(source, projectHeaders);
+        console.log(`Resolved project includes in ${filename}`);
+      }
+
+      // Ensure output directory exists in /tmp (for files like sprites/player.c)
+      if (filename.includes('/')) {
+        const subdir = filename.substring(0, filename.lastIndexOf('/'));
+        this.vfs.mkdirp('sdcpp', `/tmp/${subdir}`);
+      }
+
       // Write source to VFS
-      this.vfs.writeFile('sdcpp', inputFile, source);
+      this.vfs.writeFile('sdcpp', inputFile, resolvedSource);
       console.log(`Written ${inputFile} to sdcpp VFS`);
 
       // Check if file exists
@@ -359,7 +510,8 @@ export class GBDKCompiler {
       }
 
       // Run sdcpp with -o flag for output
-      const args = ['-I/include', '-I/include/gb', '-o', outputFile, inputFile];
+      // -I/src is needed to find project headers like sprites/player.h
+      const args = ['-I/include', '-I/include/gb', '-I/src', '-o', outputFile, inputFile];
 
       console.log(`Running sdcpp with args:`, args);
       const result = this._runModule(sdcpp, 'sdcpp', args);
@@ -375,6 +527,15 @@ export class GBDKCompiler {
 
       // Read preprocessed output
       const preprocessed = this.vfs.readFile('sdcpp', outputFile);
+
+      // Log preprocessed content to debug include issues
+      console.log(`Preprocessed ${filename} (first 500 chars):\n${preprocessed.substring(0, 500)}`);
+
+      // Check if the header content was included
+      if (filename === 'main.c' && !preprocessed.includes('PLAYER_TILE_COUNT')) {
+        console.warn('WARNING: Header content not found in preprocessed output!');
+        console.log('Looking for player_tiles in preprocessed...');
+      }
 
       this._log('Preprocessing complete', 'success');
       return preprocessed;
@@ -399,6 +560,12 @@ export class GBDKCompiler {
       // Ensure sdcc is loaded
       const sdcc = await this._ensureModuleLoaded('sdcc');
 
+      // Ensure input directory exists (for files like sprites/player.c → /src/sprites/)
+      const inputDir = inputFile.substring(0, inputFile.lastIndexOf('/') + 1);
+      if (inputDir !== '/src/') {
+        this.vfs.mkdirp('sdcc', inputDir);
+      }
+
       // Write preprocessed source to VFS
       this.vfs.writeFile('sdcc', inputFile, preprocessedSource);
       console.log(`Written ${inputFile} to sdcc VFS`);
@@ -422,9 +589,22 @@ export class GBDKCompiler {
       const srcFilesAfter = this.vfs.listFiles('sdcc', '/src');
       console.log('Files in /src after compilation:', srcFilesAfter);
 
-      // Check for unexpected filenames
+      // Check for unexpected filenames (skip directories)
       for (const file of srcFilesAfter) {
-        if (file !== 'main.c' && file !== 'main.i') {
+        if (file !== 'main.c' && file !== 'main.i' && !file.startsWith('.')) {
+          // Skip directories by checking if it's a file first
+          try {
+            const sdccModule = this.vfs.modules.get('sdcc');
+            const stat = sdccModule.FS.stat(`/src/${file}`);
+            if (sdccModule.FS.isDir(stat.mode)) {
+              console.log(`Skipping directory: ${file}`);
+              continue;
+            }
+          } catch (e) {
+            console.log(`Could not stat ${file}:`, e.message);
+            continue;
+          }
+
           console.log(`Found unexpected file: ${file}, checking contents...`);
           const content = this.vfs.readFile('sdcc', `/src/${file}`);
           console.log(`Content of ${file} (first 200 chars):`, content.substring(0, 200));
@@ -470,6 +650,12 @@ export class GBDKCompiler {
     try {
       // Ensure assembler is loaded
       const assembler = await this._ensureModuleLoaded('assembler');
+
+      // Ensure output directory exists (for files like sprites/player.c → /build/sprites/)
+      const outputDir = outputFile.substring(0, outputFile.lastIndexOf('/') + 1);
+      if (outputDir !== '/build/') {
+        this.vfs.mkdirp('assembler', outputDir);
+      }
 
       // Write assembly to VFS
       this.vfs.writeFile('assembler', inputFile, assembly);
@@ -606,6 +792,11 @@ export class GBDKCompiler {
       // Write all object files to VFS
       for (const { name, data } of objectFiles) {
         const objectPath = `/build/${name}`;
+        // Ensure subdirectory exists (for files like sprites/player.o)
+        const objectDir = objectPath.substring(0, objectPath.lastIndexOf('/') + 1);
+        if (objectDir !== '/build/') {
+          this.vfs.mkdirp('linker', objectDir);
+        }
         this.vfs.writeFile('linker', objectPath, data);
         console.log(`Written ${objectPath} to linker VFS`);
       }

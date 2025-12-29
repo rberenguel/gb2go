@@ -334,7 +334,7 @@ export class SpriteConverter {
     }
 
     // Tile data
-    code += `const uint8_t ${name}_tiles[] = {\n`;
+    code += `const UINT8 ${name}_tiles[] = {\n`;
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
@@ -421,7 +421,7 @@ export class SpriteConverter {
     }
 
     code += `\n`;
-    code += `extern const uint8_t ${name}_tiles[];\n`;
+    code += `extern const UINT8 ${name}_tiles[];\n`;
     code += `#define ${name.toUpperCase()}_TILE_COUNT ${tileCount}\n`;
 
     if (hasMetasprite) {
