@@ -230,18 +230,18 @@ void show_title(void) {
     clear_background();
     gotoxy(4, 6);
     printf("FLAPPY DUCK");
-    gotoxy(3, 10);
+    gotoxy(4, 10);
     printf("PRESS START");
     SHOW_BKG;
 }
 
 void show_game_over(void) {
     clear_background();
-    gotoxy(4, 8);
+    gotoxy(5, 6);
     printf("GAME OVER!");
-    gotoxy(5, 10);
+    gotoxy(6, 9);
     printf("SCORE: %d", score);
-    gotoxy(3, 14);
+    gotoxy(4, 12);
     printf("PRESS START");
     SHOW_BKG;
 }
@@ -369,7 +369,7 @@ void main(void) {
     show_title();
 
     // Show duck in center for title
-    move_sprite(0, 80 + 8, 72 + 16);
+    move_sprite(0, 80, 80);
 
     // Game loop
     while(1) {

@@ -299,8 +299,15 @@ body {
 #main-content {
   display: flex;
   flex: 1;
+  width: 100%;
   overflow: hidden;
   background-color: var(--color-border);
+}
+
+#resizable-panels {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* ===== Split.js Gutters ===== */
@@ -352,18 +359,18 @@ body {
 
 #file-browser-panel {
   min-width: 120px;
-  max-width: 400px;
 }
 
 #editor-panel {
   min-width: 200px;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 #emulator-panel {
-  min-width: 180px;
-  max-width: 500px;
+  width: 420px;
+  flex-shrink: 0;
 }
 
 /* Hide panels on small screens */

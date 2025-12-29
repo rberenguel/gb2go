@@ -146,7 +146,10 @@ export class GBDKCompiler {
 
       // Use multi-file compilation if we have multiple files OR PNG files
       if (additionalSources && (Object.keys(additionalSources).length > 1 || hasPngFiles)) {
-        this._log(`Using multi-file compilation (${Object.keys(additionalSources).length} files)`, 'info');
+        this._log(
+          `Using multi-file compilation (${Object.keys(additionalSources).length} files)`,
+          'info'
+        );
         return await this._compileMultiFile(additionalSources, filename);
       }
 
@@ -231,7 +234,10 @@ export class GBDKCompiler {
         continue;
       }
 
-      console.log(`Header ${headerFile} content (first 200 chars):`, headerContent.substring(0, 200));
+      console.log(
+        `Header ${headerFile} content (first 200 chars):`,
+        headerContent.substring(0, 200)
+      );
 
       // Write headers to multiple locations to ensure they're found
       const headerPaths = [
@@ -330,9 +336,7 @@ export class GBDKCompiler {
     const allFiles = Object.keys(sources);
     console.log('All source files:', allFiles);
 
-    const pngFiles = allFiles.filter(
-      (f) => f.toLowerCase().endsWith('.png') && sources[f]
-    );
+    const pngFiles = allFiles.filter((f) => f.toLowerCase().endsWith('.png') && sources[f]);
 
     console.log('PNG files found:', pngFiles);
 
@@ -346,11 +350,16 @@ export class GBDKCompiler {
     for (const pngPath of pngFiles) {
       try {
         const content = sources[pngPath];
-        console.log(`Processing PNG: ${pngPath}, content type: ${typeof content}, starts with: ${typeof content === 'string' ? content.substring(0, 30) : 'N/A'}`);
+        console.log(
+          `Processing PNG: ${pngPath}, content type: ${typeof content}, starts with: ${typeof content === 'string' ? content.substring(0, 30) : 'N/A'}`
+        );
 
         // Skip if not a data URL
         if (typeof content !== 'string' || !content.startsWith('data:image')) {
-          this._log(`Skipping ${pngPath}: not a valid image data URL (got ${typeof content})`, 'warning');
+          this._log(
+            `Skipping ${pngPath}: not a valid image data URL (got ${typeof content})`,
+            'warning'
+          );
           continue;
         }
 
@@ -460,7 +469,8 @@ export class GBDKCompiler {
       if (projectHeaders[m.path]) {
         console.log(`Resolving project include: ${m.path}`);
         const replacement = `// BEGIN included from "${m.path}"\n${projectHeaders[m.path]}\n// END included from "${m.path}"`;
-        result = result.substring(0, m.index) + replacement + result.substring(m.index + m.full.length);
+        result =
+          result.substring(0, m.index) + replacement + result.substring(m.index + m.full.length);
       } else {
         console.log(`Include "${m.path}" not found in project headers, leaving for sdcpp`);
       }

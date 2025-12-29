@@ -47,6 +47,7 @@
       <div id="toolbar">
         <div class="toolbar-section">
           <h1 class="app-title"><img src="./icons/icon-192.png" alt="G" class="app-logo" />B2GO</h1>
+          <span class="app-subtitle">Game Boy development IDE in the browser</span>
           <button id="btn-project-switcher" class="project-name-btn" title="Switch project">
             <span id="current-project-name">Loading...</span>
             <span style="margin-left: 4px">▼</span>
@@ -92,42 +93,47 @@
 
       <!-- Main Content Area -->
       <div id="main-content">
-        <!-- Left Panel: File Browser -->
-        <div id="file-browser-panel" class="panel">
-          <div class="panel-header">
-            <div style="display: flex; align-items: center; gap: 8px">
-              <button id="toggle-files" class="btn-icon-small" title="Collapse">◀</button>
-              <h2>Files</h2>
+        <!-- Resizable panels container -->
+        <div id="resizable-panels">
+          <!-- Left Panel: File Browser -->
+          <div id="file-browser-panel" class="panel">
+            <div class="panel-header">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <button id="toggle-files" class="btn-icon-small" title="Collapse">◀</button>
+                <h2>Files</h2>
+              </div>
+              <button id="btn-new-file" class="btn-icon-small" title="New file">+</button>
             </div>
-            <button id="btn-new-file" class="btn-icon-small" title="New file">+</button>
+            <div id="file-browser" class="panel-content">
+              <!-- File tree will be rendered here -->
+            </div>
           </div>
-          <div id="file-browser" class="panel-content">
-            <!-- File tree will be rendered here -->
-          </div>
-        </div>
 
-        <!-- Middle Panel: Code Editor -->
-        <div id="editor-panel" class="panel panel-main">
-          <div class="panel-header">
-            <h2 id="current-file-name">main.c</h2>
-          </div>
-          <div id="editor-container" class="panel-content">
-            <!-- CodeMirror editor will be mounted here -->
-          </div>
-          <div id="console-container" class="console">
-            <div class="console-header">
-              <h3>Console</h3>
-              <button id="btn-clear-console" class="btn-icon-small" title="Clear console">×</button>
+          <!-- Middle Panel: Code Editor -->
+          <div id="editor-panel" class="panel panel-main">
+            <div class="panel-header">
+              <h2 id="current-file-name">main.c</h2>
             </div>
-            <div id="console-output" class="console-output">
-              <div class="console-line console-info">
-                GB2GO ready. Click "Compile" to build your project.
+            <div id="editor-container" class="panel-content">
+              <!-- CodeMirror editor will be mounted here -->
+            </div>
+            <div id="console-container" class="console">
+              <div class="console-header">
+                <h3>Console</h3>
+                <button id="btn-clear-console" class="btn-icon-small" title="Clear console">
+                  ×
+                </button>
+              </div>
+              <div id="console-output" class="console-output">
+                <div class="console-line console-info">
+                  GB2GO ready. Click "Compile" to build your project.
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Right Panel: Emulator -->
+        <!-- Right Panel: Emulator (fixed width, not resizable) -->
         <div id="emulator-panel" class="panel">
           <div class="panel-header">
             <h2>Emulator</h2>

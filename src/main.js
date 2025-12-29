@@ -305,11 +305,11 @@ function initSplitPanels() {
     return;
   }
 
-  // Horizontal split for main panels (file browser, editor, emulator)
+  // Horizontal split for file browser and editor only (emulator is fixed width)
   try {
-    Split(['#file-browser-panel', '#editor-panel', '#emulator-panel'], {
-      sizes: [15, 55, 30], // Initial percentages
-      minSize: [120, 200, 180],
+    Split(['#file-browser-panel', '#editor-panel'], {
+      sizes: [20, 80], // Initial percentages
+      minSize: [120, 200],
       gutterSize: 4,
       snapOffset: 0,
       onDragEnd: () => {
@@ -410,6 +410,8 @@ async function displaySource() {
       languages,
       Decoration,
       ViewPlugin,
+      search,
+      searchKeymap,
     } = await import('CodeMirrorBundle');
 
     // Active Line Plugin (Custom implementation since it's missing from bundle)
@@ -448,7 +450,8 @@ async function displaySource() {
     const extensions = [
       oneDark,
       history(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
+      search(),
+      keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
       activeLineHighlighter,
       EditorView.theme({
         '&': { height: '100%', backgroundColor: '#1e1e1e !important' },
