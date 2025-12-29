@@ -156,48 +156,329 @@ void main(void) {
 };
 
 /**
- * Sprite PNG example template - Demonstrates the PNG to C workflow
- * The PNG file is generated dynamically when the project is created
+ * Flappy Duck - A complete game demonstrating PNG sprite workflow
+ * PNG files are loaded from src/templates/sprites/
  */
 export const spritePngTemplate = {
-  name: 'Sprite PNG Example',
-  // PNG will be added dynamically by createSpriteExamplePng()
+  name: 'Flappy Duck',
   files: {
     'main.c': `#include <gb/gb.h>
-#include "sprites/player.h"  // Auto-generated from player.png at compile time
+#include <gb/font.h>
+#include <gb/console.h>
+#include <stdio.h>
+#include "sprites/duck1.h"  // Duck frame 1
+#include "sprites/duck2.h"  // Duck frame 2
+#include "sprites/pipe.h"   // Pipe segment
+
+// Game constants
+#define GRAVITY 1
+#define FLAP_STRENGTH 7
+#define PIPE_SPEED 1
+#define PIPE_GAP 48
+#define DUCK_X 30
+#define PIPES_PER_SIDE 8
+
+// Game states
+#define STATE_TITLE 0
+#define STATE_PLAYING 1
+#define STATE_GAMEOVER 2
+
+// Game state
+UINT8 game_state;
+INT16 duck_y;        // Duck Y position (fixed point, /16 for actual)
+INT8 duck_vel;       // Duck velocity
+UINT8 duck_frame;    // Animation frame (0 or 1)
+UINT8 frame_count;   // Frame counter for animation
+
+// Pipe state (2 pipes on screen)
+INT16 pipe_x[2];     // Pipe X positions
+UINT8 pipe_gap_y[2]; // Y position of gap center
+
+UINT8 score;
+
+// Tile indices for sprites
+#define TILE_DUCK1 0
+#define TILE_DUCK2 1
+#define TILE_PIPE 2
+
+// Simple random number generator
+UINT8 rand_seed;
+UINT8 next_rand(void) {
+    rand_seed = (rand_seed * 13 + 7) & 0xFF;
+    return rand_seed;
+}
+
+void hide_all_sprites(void) {
+    UINT8 i;
+    for (i = 0; i < 40; i++) {
+        move_sprite(i, 0, 0);
+    }
+}
+
+void clear_background(void) {
+    UINT8 blank[1] = {0};
+    UINT8 x, y;
+    // Fill background with blank tiles
+    for (y = 0; y < 18; y++) {
+        for (x = 0; x < 20; x++) {
+            set_bkg_tiles(x, y, 1, 1, blank);
+        }
+    }
+}
+
+void show_title(void) {
+    clear_background();
+    gotoxy(4, 6);
+    printf("FLAPPY DUCK");
+    gotoxy(3, 10);
+    printf("PRESS START");
+    SHOW_BKG;
+}
+
+void show_game_over(void) {
+    clear_background();
+    gotoxy(4, 8);
+    printf("GAME OVER!");
+    gotoxy(5, 10);
+    printf("SCORE: %d", score);
+    gotoxy(3, 14);
+    printf("PRESS START");
+    SHOW_BKG;
+}
+
+void start_gameplay(void) {
+    clear_background();
+    gotoxy(0, 0);
+    printf("0");
+    SHOW_BKG;
+}
+
+void update_score_display(UINT8 old_score) {
+    if (score != old_score) {
+        gotoxy(0, 0);
+        printf("%d ", score);  // Extra space clears old digit
+    }
+}
+
+void init_pipe(UINT8 i, INT16 x) {
+    pipe_x[i] = x;
+    // Random gap position (between 50 and 94) - more centered
+    pipe_gap_y[i] = 50 + (next_rand() % 44);
+}
+
+void draw_pipe(UINT8 pipe_idx, UINT8 sprite_base) {
+    INT16 x = pipe_x[pipe_idx];
+    INT16 gap_y = pipe_gap_y[pipe_idx];
+    UINT8 i;
+    INT16 py;
+
+    // Hide all pipe sprites if off-screen
+    if (x < -8 || x > 168) {
+        for (i = 0; i < PIPES_PER_SIDE * 2; i++) {
+            move_sprite(sprite_base + i, 0, 0);
+        }
+        return;
+    }
+
+    // Draw top pipe (8 sprites from top of screen down to gap)
+    for (i = 0; i < PIPES_PER_SIDE; i++) {
+        py = gap_y - PIPE_GAP/2 - 8 - (i * 8);
+        if (py > -8 && py < 160) {
+            move_sprite(sprite_base + i, x + 8, py + 16);
+        } else {
+            move_sprite(sprite_base + i, 0, 0);
+        }
+    }
+
+    // Draw bottom pipe (8 sprites from gap down to bottom)
+    for (i = 0; i < PIPES_PER_SIDE; i++) {
+        py = gap_y + PIPE_GAP/2 + (i * 8);
+        if (py > -8 && py < 160) {
+            move_sprite(sprite_base + PIPES_PER_SIDE + i, x + 8, py + 16);
+        } else {
+            move_sprite(sprite_base + PIPES_PER_SIDE + i, 0, 0);
+        }
+    }
+}
+
+UINT8 check_collision(void) {
+    UINT8 dy = duck_y >> 4;  // Convert from fixed point
+    UINT8 i;
+
+    // Check floor only (ceiling is ok)
+    if (dy > 136) return 1;
+
+    // Check pipe collision
+    for (i = 0; i < 2; i++) {
+        INT16 px = pipe_x[i];
+
+        // Check if duck is horizontally aligned with pipe
+        if (DUCK_X + 5 > px && DUCK_X < px + 8) {
+            UINT8 gap_y = pipe_gap_y[i];
+            // Check if duck is outside the gap
+            if (dy < gap_y - PIPE_GAP/2 + 2 || dy + 5 > gap_y + PIPE_GAP/2 - 2) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+void reset_game(void) {
+    duck_y = 72 << 4;  // Center of screen (fixed point)
+    duck_vel = 0;
+    score = 0;
+    duck_frame = 0;
+    frame_count = 0;
+
+    init_pipe(0, 180);
+    init_pipe(1, 280);
+}
 
 void main(void) {
-    UINT8 x = 80, y = 72;
+    UINT8 keys, prev_keys = 0;
+    UINT8 i;
 
-    // Load sprite tile data (generated from sprites/player.png)
-    // The converter creates player_tiles[] and PLAYER_TILE_COUNT
-    set_sprite_data(0, PLAYER_TILE_COUNT, player_tiles);
+    // Initialize random seed
+    rand_seed = 42;
 
-    // Set sprite 0 to use tile 0
-    set_sprite_tile(0, 0);
+    // Initialize font for text display (loads into BKG tiles)
+    font_init();
+    font_set(font_load(font_spect));
 
-    // Position sprite (add 8,16 offset - sprites are hidden if x<8 or y<16)
-    move_sprite(0, x + 8, y + 16);
+    // Load sprite tile data (into sprite VRAM, separate from BKG)
+    set_sprite_data(TILE_DUCK1, 1, duck1_tiles);
+    set_sprite_data(TILE_DUCK2, 1, duck2_tiles);
+    set_sprite_data(TILE_PIPE, 1, pipe_tiles);
 
-    // Make sprites visible
+    // Set up duck sprite (sprite 0)
+    set_sprite_tile(0, TILE_DUCK1);
+
+    // Set up pipe sprites (sprites 1-32, 16 per pipe)
+    for (i = 0; i < PIPES_PER_SIDE * 4; i++) {
+        set_sprite_tile(1 + i, TILE_PIPE);
+    }
+
+    // Hide all sprites initially
+    hide_all_sprites();
+
     SHOW_SPRITES;
 
-    // Game loop - move sprite with D-pad
+    // Start at title screen
+    game_state = STATE_TITLE;
+    show_title();
+
+    // Show duck in center for title
+    move_sprite(0, 80 + 8, 72 + 16);
+
+    // Game loop
     while(1) {
-        UINT8 keys = joypad();
+        keys = joypad();
 
-        if (keys & J_UP)    y--;
-        if (keys & J_DOWN)  y++;
-        if (keys & J_LEFT)  x--;
-        if (keys & J_RIGHT) x++;
+        switch (game_state) {
+            case STATE_TITLE:
+                // Animate duck on title
+                frame_count++;
+                if (frame_count >= 10) {
+                    frame_count = 0;
+                    duck_frame = !duck_frame;
+                    set_sprite_tile(0, duck_frame ? TILE_DUCK2 : TILE_DUCK1);
+                }
 
-        // Keep sprite on screen
-        if (x < 1) x = 1;
-        if (x > 160) x = 160;
-        if (y < 1) y = 1;
-        if (y > 144) y = 144;
+                // Vary random seed while waiting
+                rand_seed++;
 
-        move_sprite(0, x + 8, y + 16);
+                // Start game on START or A button
+                if (((keys & J_START) || (keys & J_A)) &&
+                    !((prev_keys & J_START) || (prev_keys & J_A))) {
+                    hide_all_sprites();
+                    reset_game();
+                    start_gameplay();
+                    game_state = STATE_PLAYING;
+                }
+                break;
+
+            case STATE_PLAYING:
+                {
+                UINT8 old_score = score;
+                UINT8 other_pipe;
+                INT16 new_pipe_x;
+
+                // A button to flap
+                if ((keys & J_A) && !(prev_keys & J_A)) {
+                    duck_vel = -FLAP_STRENGTH;
+                }
+
+                // Apply gravity
+                duck_vel += GRAVITY;
+                if (duck_vel > 8) duck_vel = 8;
+
+                duck_y += duck_vel << 2;
+
+                // Keep duck on screen (top)
+                if (duck_y < 0) {
+                    duck_y = 0;
+                    duck_vel = 0;
+                }
+
+                // Update pipes
+                for (i = 0; i < 2; i++) {
+                    pipe_x[i] -= PIPE_SPEED;
+
+                    // Score when passing pipe
+                    if (pipe_x[i] == DUCK_X - PIPE_SPEED) {
+                        score++;
+                        if (score > 99) score = 99;
+                    }
+
+                    // Reset pipe when off screen - place after the other pipe
+                    if (pipe_x[i] < -16) {
+                        other_pipe = (i == 0) ? 1 : 0;
+                        new_pipe_x = pipe_x[other_pipe] + 80 + (next_rand() & 0x1F);
+                        if (new_pipe_x < 168) new_pipe_x = 168;
+                        init_pipe(i, new_pipe_x);
+                    }
+                }
+
+                // Update score display if changed
+                update_score_display(old_score);
+
+                // Check collision
+                if (check_collision()) {
+                    show_game_over();
+                    game_state = STATE_GAMEOVER;
+                }
+
+                // Animate duck
+                frame_count++;
+                if (frame_count >= 8) {
+                    frame_count = 0;
+                    duck_frame = !duck_frame;
+                    set_sprite_tile(0, duck_frame ? TILE_DUCK2 : TILE_DUCK1);
+                }
+
+                // Draw duck
+                move_sprite(0, DUCK_X + 8, (duck_y >> 4) + 16);
+
+                // Draw pipes
+                draw_pipe(0, 1);
+                draw_pipe(1, 1 + PIPES_PER_SIDE * 2);
+                }
+                break;
+
+            case STATE_GAMEOVER:
+                // Restart on START or A
+                if (((keys & J_START) || (keys & J_A)) &&
+                    !((prev_keys & J_START) || (prev_keys & J_A))) {
+                    hide_all_sprites();
+                    reset_game();
+                    start_gameplay();
+                    game_state = STATE_PLAYING;
+                }
+                break;
+        }
+
+        prev_keys = keys;
         wait_vbl_done();
     }
 }
@@ -206,32 +487,32 @@ void main(void) {
 };
 
 /**
- * Generate a simple 8x8 smiley sprite PNG as a data URL
- * Uses the Game Boy DMG palette
- * @returns {string} PNG data URL
+ * Generate rubber duck sprite frame 1 (normal)
+ * Side-view rubber duck facing right, like a bath toy
+ * @returns {string} PNG data URL (8x8)
  */
-export function createSpriteExamplePng() {
+export function createDuck1SpritePng() {
   const canvas = document.createElement('canvas');
   canvas.width = 8;
   canvas.height = 8;
   const ctx = canvas.getContext('2d');
 
-  // Game Boy DMG palette
+  // Game Boy DMG palette (0=lightest/bg to 3=darkest)
   const palette = ['#9bbc0f', '#8bac0f', '#306230', '#0f380f'];
 
-  // Smiley face pattern (0 = lightest, 3 = darkest)
+  // Rubber duck facing RIGHT - classic bath toy look
+  // 0=bg, 1=yellow body, 2=orange beak, 3=dark eye/outline
   const pattern = [
-    [0, 0, 3, 3, 3, 3, 0, 0], // ..####..
-    [0, 3, 0, 0, 0, 0, 3, 0], // .#....#.
-    [3, 0, 3, 0, 0, 3, 0, 3], // #.#..#.# (eyes)
-    [3, 0, 0, 0, 0, 0, 0, 3], // #......#
-    [3, 0, 3, 0, 0, 3, 0, 3], // #.#..#.# (mouth)
-    [3, 0, 0, 3, 3, 0, 0, 3], // #..##..#
-    [0, 3, 0, 0, 0, 0, 3, 0], // .#....#.
-    [0, 0, 3, 3, 3, 3, 0, 0], // ..####..
+    [0, 0, 1, 1, 1, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 0, 0],
+    [0, 1, 1, 1, 3, 1, 2, 2],
+    [0, 1, 1, 1, 1, 1, 2, 0],
+    [0, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1, 1, 0, 0],
+    [0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
   ];
 
-  // Draw pixels
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
       ctx.fillStyle = palette[pattern[y][x]];
@@ -240,6 +521,84 @@ export function createSpriteExamplePng() {
   }
 
   return canvas.toDataURL('image/png');
+}
+
+/**
+ * Generate rubber duck sprite frame 2 (bobbing/flapping)
+ * Same duck but shifted down 1px for bobbing animation
+ * @returns {string} PNG data URL (8x8)
+ */
+export function createDuck2SpritePng() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 8;
+  canvas.height = 8;
+  const ctx = canvas.getContext('2d');
+
+  // Game Boy DMG palette
+  const palette = ['#9bbc0f', '#8bac0f', '#306230', '#0f380f'];
+
+  // Same duck, shifted down 1 pixel for bobbing effect
+  const pattern = [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 1, 1, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 0, 0],
+    [0, 1, 1, 1, 3, 1, 2, 2],
+    [0, 1, 1, 1, 1, 1, 2, 0],
+    [0, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1, 1, 0, 0],
+    [0, 0, 0, 1, 1, 0, 0, 0],
+  ];
+
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      ctx.fillStyle = palette[pattern[y][x]];
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * Generate pipe sprite (solid green block)
+ * @returns {string} PNG data URL (8x8)
+ */
+export function createPipeSpritePng() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 8;
+  canvas.height = 8;
+  const ctx = canvas.getContext('2d');
+
+  // Game Boy DMG palette
+  const palette = ['#9bbc0f', '#8bac0f', '#306230', '#0f380f'];
+
+  // Pipe pattern - solid with edge highlight
+  const pattern = [
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [2, 2, 2, 2, 2, 2, 2, 3],
+    [3, 3, 3, 3, 3, 3, 3, 3],
+  ];
+
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      ctx.fillStyle = palette[pattern[y][x]];
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * Legacy function for backwards compatibility
+ */
+export function createSpriteExamplePng() {
+  return createDuck1SpritePng();
 }
 
 // Legacy exports

@@ -12,8 +12,20 @@ import {
   minimalTemplate,
   spriteTemplate,
   spritePngTemplate,
-  createSpriteExamplePng,
 } from './templates/hello-world.js';
+
+/**
+ * Load a PNG file and convert to data URL
+ */
+async function loadTemplateSprite(filename) {
+  const response = await fetch(`./src/templates/sprites/${filename}`);
+  const blob = await response.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
 
 // Application state
 const app = {
@@ -453,6 +465,10 @@ async function displaySource() {
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           app.currentSource = update.state.doc.toString();
+          // Also update the project files so compile uses latest content
+          if (app.currentProject && app.currentFile) {
+            app.currentProject.files[app.currentFile] = app.currentSource;
+          }
           // Auto-save with debounce
           clearTimeout(app.saveTimeout);
           app.saveTimeout = setTimeout(() => saveCurrentFile(), 1000);
@@ -512,6 +528,10 @@ async function displaySource() {
     `;
     textarea.addEventListener('input', (e) => {
       app.currentSource = e.target.value;
+      // Also update the project files so compile uses latest content
+      if (app.currentProject && app.currentFile) {
+        app.currentProject.files[app.currentFile] = app.currentSource;
+      }
       // Auto-save with debounce
       clearTimeout(app.saveTimeout);
       app.saveTimeout = setTimeout(() => saveCurrentFile(), 1000);
@@ -1541,12 +1561,16 @@ function showNewProjectDialog() {
       } else if (template === 'sprite') {
         newProject = await app.storage.createProject(projectName, spriteTemplate);
       } else if (template === 'sprite-png') {
-        // Create project with PNG workflow template
+        // Create Flappy Duck project with PNG sprites
         newProject = await app.storage.createProject(projectName, spritePngTemplate);
-        // Generate and save the sprite PNG
-        const pngDataUrl = createSpriteExamplePng();
-        await app.storage.saveFile(newProject.id, 'sprites/player.png', pngDataUrl, 'binary');
-        log('Generated sprites/player.png - edit it with the sprite editor!', 'info');
+        // Load sprite PNGs from template files
+        const duck1Png = await loadTemplateSprite('duck1.png');
+        await app.storage.saveFile(newProject.id, 'sprites/duck1.png', duck1Png, 'binary');
+        const duck2Png = await loadTemplateSprite('duck2.png');
+        await app.storage.saveFile(newProject.id, 'sprites/duck2.png', duck2Png, 'binary');
+        const pipePng = await loadTemplateSprite('pipe.png');
+        await app.storage.saveFile(newProject.id, 'sprites/pipe.png', pipePng, 'binary');
+        log('Loaded duck and pipe sprites for Flappy Duck!', 'info');
       } else if (template === 'minimal') {
         newProject = await app.storage.createProject(projectName, minimalTemplate);
       } else {
